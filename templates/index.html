@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Inventory System</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Navigation */
+        .main-nav {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Camera Container */
+        .camera-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .camera-container h3 {
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 10px;
+            border: 3px solid #667eea;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .camera-controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .camera-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .camera-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .camera-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .stop-btn {
+            background: #dc3545;
+        }
+
+        .stop-btn:hover {
+            background: #c82333;
+        }
+
+        .scan-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .scan-result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .scan-result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        /* Forms */
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        /* Stats Cards */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-card h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        /* Inventory List */
+        .inventory-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .search-container input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .books-list {
+            overflow-x: auto;
+        }
+
+        .book-item {
+            padding: 15px;
+            border-bottom: 1px solid #f1f3f4;
+            display: grid;
+            grid-template-columns: 1.5fr 2fr 1fr 2fr 1fr;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .book-item:last-child {
+            border-bottom: none;
+        }
+
+        .book-item.header {
+            background: #f8f9fa;
+            font-weight: 600;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* Billing */
+        .bill-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .bill-item {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+            display: grid;
+            grid-template-columns: 2fr 1fr 80px 1fr 80px;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .bill-total {
+            text-align: right;
+            padding: 20px 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+            border-top: 2px solid #667eea;
+            margin-top: 20px;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qty-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 5px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .qty-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        /* Messages */
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        .message.success {
+            background: #28a745;
+        }
+
+        .message.error {
+            background: #dc3545;
+        }
+
+        .message.info {
+            background: #17a2b8;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .scan-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .scan-info p {
+            margin: 5px 0;
+            color: #155724;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        #video, #video-bill {
+            border: 3px solid #28a745;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            max-width: 100%;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .section {
+                padding: 20px;
+            }
+
+            .camera-container,
+            .form-container,
+            .inventory-container,
+            .bill-container {
+                padding: 20px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .book-item,
+            .bill-item {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 8px;
+            }
+
+            .book-item.header {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>📚 Library Inventory System</h1>
+        <div class="header-actions">
+            <span>Welcome, admin</span>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <button class="nav-btn active" data-section="inventory">📊 Inventory</button>
+        <button class="nav-btn" data-section="add-book">➕ Add Book</button>
+        <button class="nav-btn" data-section="billing">💳 Billing</button>
+    </nav>
+
+    <!-- Inventory Section -->
+    <div id="inventory-section" class="section active">
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Books</h3>
+                <div class="value" id="total-books">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Value</h3>
+                <div class="value" id="total-value">$0.00</div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="inventory-container">
+            <h2>📚 Book Inventory</h2>
+            <div class="search-container">
+                <input type="text" id="search-books" placeholder="Search books by name, barcode, or details...">
+                <button class="btn btn-secondary" id="clear-search">Clear</button>
+            </div>
+            <div class="books-list">
+                <div class="book-item header">
+                    <span>Barcode</span>
+                    <span>Book Name</span>
+                    <span>Price</span>
+                    <span>Details</span>
+                    <span>Date Added</span>
+                </div>
+                <div id="books-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Book Section -->
+    <div id="add-book-section" class="section">
+        <!-- Camera Scanning -->
+        <div class="camera-container">
+            <h3>📷 Automatic Barcode Scanner</h3>
+            <div class="scan-info">
+                <p>✨ <strong>Auto-Detection:</strong> Just point camera at barcode - it will automatically detect and stop!</p>
+                <p>🔄 <strong>Continuous Scanning:</strong> Uses your reliable Python pyzbar library</p>
+            </div>
+            <video id="video" autoplay muted playsinline style="display: none;"></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <div class="camera-controls">
+                <button class="camera-btn" id="start-camera">🚀 Start Auto-Scanning</button>
+                <button class="camera-btn stop-btn" id="stop-camera" disabled>⏹️ Stop Scanning</button>
+            </div>
+            <div id="scan-result" class="scan-result" style="display: none;"></div>
+        </div>
+
+        <!-- Add Book Form -->
+        <div class="form-container">
+            <h3>📖 Add New Book</h3>
+            <form id="add-book-form">
+                <div class="input-group">
+                    <label for="book-barcode">Barcode:</label>
+                    <input type="text" id="book-barcode" required>
+                </div>
+                <div class="input-group">
+                    <label for="book-name">Book Name:</label>
+                    <input type="text" id="book-name" required>
+                </div>
+                <div class="input-group">
+                    <label for="book-price">Price:</label>
+                    <input type="number" id="book-price" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label for="book-details">Details:</label>
+                    <textarea id="book-details" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Add Book</button>
+                    <button type="button" class="btn btn-secondary" id="clear-form">Clear Form</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Billing Section -->
+    <div id="billing-section" class="section">
+        <!-- Camera for Billing -->
+        <div class="camera-container">
+            <h3>🔍 Automatic Item Scanner for Billing</h3>
+            <div class="scan-info">
+                <p>✨ <strong>Auto-Detection:</strong> Point camera at item barcode - auto-adds to bill!</p>
+                <p>🔄 <strong>Continuous Scanning:</strong> Uses your reliable Python pyzbar library</p>
+            </div>
+            <video id="video-bill" autoplay muted playsinline style="display: none;"></video>
+            <canvas id="canvas-bill" style="display: none;"></canvas>
+            <div class="camera-controls">
+                <button class="camera-btn" id="start-camera-bill">🚀 Start Auto-Scanning</button>
+                <button class="camera-btn stop-btn" id="stop-camera-bill" disabled>⏹️ Stop Scanning</button>
+            </div>
+            <div id="scan-result-bill" class="scan-result" style="display: none;"></div>
+        </div>
+
+        <!-- Current Bill -->
+        <div class="bill-container">
+            <h3>🧾 Current Bill</h3>
+            <div class="bill-item header" style="font-weight: bold;">
+                <span>Item</span>
+                <span>Price</span>
+                <span>Qty</span>
+                <span>Total</span>
+                <span>Action</span>
+            </div>
+            <div id="bill-items"></div>
+            <div class="bill-total">
+                Total: $<span id="bill-total">0.00</span>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" id="clear-bill">Clear Bill</button>
+                <button class="btn btn-primary" id="process-bill">Process Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
