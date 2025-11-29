@@ -4,7 +4,14 @@ class LibrarySystem {
         this.currentBill = [];
         this.books = [];
         this.videoStreams = {};
+        this.scanningIntervals = {};
+        this.isMobileDevice = this.detectMobile();
         this.init();
+    }
+
+    detectMobile() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
     }
 
     init() {
@@ -106,7 +113,8 @@ class LibrarySystem {
                 document.getElementById('video-bill');
 
             // Start live camera preview first
-            this.showMessage('Starting camera preview...', 'info');
+            const deviceType = this.isMobileDevice ? '📱 Mobile' : '💻 Desktop';
+            this.showMessage(`${deviceType} - Starting camera...`, 'info');
             
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -125,30 +133,36 @@ class LibrarySystem {
             stopBtn.disabled = false;
             startBtn.textContent = '🔄 Scanning...';
 
-            this.showMessage('Starting continuous barcode scanning...', 'info');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'scan-result';
 
-            // Start continuous scanning on backend
-            const response = await fetch('/api/start_continuous_scan', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ type: type })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                this.showMessage('📷 Live camera + Python scanning active! Point at barcode!', 'success');
-                resultDiv.style.display = 'block';
-                resultDiv.className = 'scan-result';
-                resultDiv.textContent = '🔍 Live scanning... Point camera at barcode for auto-detection';
-                
-                // Start polling for results
-                this.pollForScanResult(type);
+            if (this.isMobileDevice) {
+                // MOBILE: Start frame capture and send to backend
+                this.showMessage('📱 Mobile scanning active! Point at barcode!', 'success');
+                resultDiv.textContent = '📱 Scanning... Point camera at barcode';
+                this.startMobileContinuousCapture(type);
             } else {
-                this.showMessage('Failed to start scanning: ' + result.error, 'error');
-                this.resetScanButtons(type);
+                // DESKTOP: Start server-side OpenCV scanning
+                this.showMessage('💻 Desktop scanning active! Point at barcode!', 'success');
+                resultDiv.textContent = '💻 Scanning... Point camera at barcode';
+                
+                // Start continuous scanning on backend
+                const response = await fetch('/api/start_continuous_scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ type: type, is_mobile: false })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.pollForScanResult(type);
+                } else {
+                    this.showMessage('Failed to start scanning: ' + result.error, 'error');
+                    this.resetScanButtons(type);
+                }
             }
 
         } catch (error) {
@@ -158,8 +172,85 @@ class LibrarySystem {
         }
     }
 
+    startMobileContinuousCapture(type) {
+        const video = type === 'add' ? 
+            document.getElementById('video') : 
+            document.getElementById('video-bill');
+        const canvas = type === 'add' ? 
+            document.getElementById('canvas') : 
+            document.getElementById('canvas-bill');
+        const ctx = canvas.getContext('2d');
+        const resultDiv = type === 'add' ? 
+            document.getElementById('scan-result') : 
+            document.getElementById('scan-result-bill');
+
+        let frameCount = 0;
+
+        // Capture and send frames every 500ms (2 FPS)
+        this.scanningIntervals[type] = setInterval(async () => {
+            try {
+                frameCount++;
+                
+                // Set canvas size to match video
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Draw current frame
+                ctx.drawImage(video, 0, 0);
+
+                // Convert to base64
+                const imageData = canvas.toDataURL('image/jpeg', 0.7);
+
+                // Send to server for barcode detection
+                const response = await fetch('/api/scan_barcode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        image: imageData,
+                        type: type
+                    })
+                });
+
+                const result = await response.json();
+
+                // Update status
+                resultDiv.textContent = `📱 Scanning... (${frameCount} frames checked)`;
+
+                if (result.detected && result.barcode) {
+                    // Barcode found! Stop scanning
+                    console.log('🎯 Barcode detected:', result.barcode);
+                    this.stopMobileContinuousCapture(type);
+                    this.showScanResult(result.barcode, type, true);
+                    this.handleScanResult(result.barcode, type);
+                    this.resetScanButtons(type);
+                } else if (result.stopped) {
+                    // Scanning was stopped
+                    this.stopMobileContinuousCapture(type);
+                }
+
+            } catch (error) {
+                console.error('Mobile capture error:', error);
+            }
+        }, 500); // Capture every 500ms
+
+        console.log('📱 Mobile continuous capture started for', type);
+    }
+
+    stopMobileContinuousCapture(type) {
+        if (this.scanningIntervals[type]) {
+            clearInterval(this.scanningIntervals[type]);
+            delete this.scanningIntervals[type];
+            console.log('📱 Mobile continuous capture stopped for', type);
+        }
+    }
+
     async stopContinuousScanning(type) {
         try {
+            // Stop mobile capture if active
+            this.stopMobileContinuousCapture(type);
+
             // Stop live camera feed
             const video = type === 'add' ? 
                 document.getElementById('video') : 
@@ -172,14 +263,16 @@ class LibrarySystem {
             video.srcObject = null;
             video.style.display = 'none';
 
-            // Stop scanning on backend
-            await fetch('/api/stop_continuous_scan', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ type: type })
-            });
+            // Stop scanning on backend (for desktop mode)
+            if (!this.isMobileDevice) {
+                await fetch('/api/stop_continuous_scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ type: type })
+                });
+            }
 
             this.resetScanButtons(type);
             this.showMessage('Camera and scanning stopped.', 'info');
@@ -191,6 +284,9 @@ class LibrarySystem {
     }
 
     resetScanButtons(type) {
+        // Stop mobile capture if active
+        this.stopMobileContinuousCapture(type);
+
         const startBtn = type === 'add' ? 
             document.getElementById('start-camera') : 
             document.getElementById('start-camera-bill');

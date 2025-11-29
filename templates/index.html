@@ -551,14 +551,14 @@
         <div class="camera-container">
             <h3>📷 Automatic Barcode Scanner</h3>
             <div class="scan-info">
-                <p>✨ <strong>Auto-Detection:</strong> Just point camera at barcode - it will automatically detect and stop!</p>
-                <p>🔄 <strong>Continuous Scanning:</strong> Uses your reliable Python pyzbar library</p>
+            <p>✨ <strong>Auto-Detection:</strong> Just point camera at barcode - it will automatically detect and stop!</p>
+            <p>🔄 <strong>Continuous Scanning:</strong> Uses your reliable Python pyzbar library</p>
             </div>
-            <video id="video" autoplay muted playsinline style="display: none;"></video>
+            <video id="video" autoplay muted playsinline style="display: none; width: 300px; height: 225px;"></video>
             <canvas id="canvas" style="display: none;"></canvas>
             <div class="camera-controls">
-                <button class="camera-btn" id="start-camera">🚀 Start Auto-Scanning</button>
-                <button class="camera-btn stop-btn" id="stop-camera" disabled>⏹️ Stop Scanning</button>
+            <button class="camera-btn" id="start-camera">🚀 Start Auto-Scanning</button>
+            <button class="camera-btn stop-btn" id="stop-camera" disabled>⏹️ Stop Scanning</button>
             </div>
             <div id="scan-result" class="scan-result" style="display: none;"></div>
         </div>

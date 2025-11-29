@@ -277,25 +277,75 @@ def check_scan_result():
 
 @app.route('/api/scan_barcode', methods=['POST'])
 def scan_barcode():
+    """Scan barcode from mobile device image"""
     if 'user' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
         data = request.get_json()
         img_data = data.get('image')
+        scan_type = data.get('type', 'add')
         
         if not img_data:
             return jsonify({'error': 'No image data provided'}), 400
         
-        barcode = decode_barcode_from_image(img_data)
+        # Decode base64 image
+        img_bytes = base64.b64decode(img_data.split(',')[1])
+        img_array = np.frombuffer(img_bytes, dtype=np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
         
-        if barcode:
-            return jsonify({'success': True, 'barcode': barcode})
-        else:
-            return jsonify({'success': False, 'error': 'No barcode detected'})
+        if img is None:
+            return jsonify({'detected': False, 'barcode': None, 'error': 'Failed to decode image'})
+        
+        # Try multiple preprocessing techniques for better detection
+        barcodes = []
+        
+        # 1. Try original image
+        barcodes = decode(img)
+        if barcodes:
+            barcode_data = barcodes[0].data.decode('utf-8')
+            print(f"🎯 Barcode detected (original): {barcode_data}")
+            return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
+        
+        # 2. Try grayscale
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        barcodes = decode(gray)
+        if barcodes:
+            barcode_data = barcodes[0].data.decode('utf-8')
+            print(f"🎯 Barcode detected (grayscale): {barcode_data}")
+            return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
+        
+        # 3. Try with increased contrast
+        gray = cv2.equalizeHist(gray)
+        barcodes = decode(gray)
+        if barcodes:
+            barcode_data = barcodes[0].data.decode('utf-8')
+            print(f"🎯 Barcode detected (contrast): {barcode_data}")
+            return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
+        
+        # 4. Try with thresholding
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        barcodes = decode(thresh)
+        if barcodes:
+            barcode_data = barcodes[0].data.decode('utf-8')
+            print(f"🎯 Barcode detected (threshold): {barcode_data}")
+            return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
+        
+        # 5. Try inverted
+        inverted = cv2.bitwise_not(thresh)
+        barcodes = decode(inverted)
+        if barcodes:
+            barcode_data = barcodes[0].data.decode('utf-8')
+            print(f"🎯 Barcode detected (inverted): {barcode_data}")
+            return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
+        
+        # No barcode found
+        print("⚪ No barcode detected in frame")
+        return jsonify({'detected': False, 'barcode': None, 'continue': True})
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Scan error: {e}")
+        return jsonify({'detected': False, 'error': str(e)}), 500
 
 @app.route('/api/books', methods=['GET', 'POST'])
 def books_api():
@@ -384,6 +434,7 @@ if __name__ == '__main__':
     init_csv_files()
     print("🚀 Library Inventory System Starting...")
     print("📚 Using reliable Python barcode scanning with pyzbar")
-    print("🌐 Access at: http://localhost:8080")
+    print("🌐 Access at: https://localhost:8080")
     print("👤 Login: admin / admin123")
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    # app.run(debug=True, host='0.0.0.0', port=8080)  # Use SSL in production
+    app.run(debug=True, host='0.0.0.0', port=8080,ssl_context=('cert.pem', 'key.pem'))  # Use SSL in productionF
