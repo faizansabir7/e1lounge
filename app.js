@@ -254,7 +254,7 @@ class LibraryInventorySystem {
                     return;
                 }
                 
-                console.log("🚀 QuaggaJS initialization finished. Ready to start");
+                console.log(" QuaggaJS initialization finished. Ready to start");
                 console.log("📋 Available readers:", config.decoder.readers);
                 console.log("🎥 Camera constraints:", config.inputStream.constraints);
                 
@@ -546,26 +546,24 @@ class LibraryInventorySystem {
     }
     
     displayBooks(booksToShow = this.books) {
-        const booksListElement = document.getElementById('books-list');
+        const booksContainer = document.getElementById('books-container');
         
         if (booksToShow.length === 0) {
-            booksListElement.innerHTML = '<div class="no-books">No books found.</div>';
+            booksContainer.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No books found.</td></tr>';
             return;
         }
         
         const booksHTML = booksToShow.map(book => `
-            <div class="book-item">
-                <span class="book-barcode">${book.barcode}</span>
-                <span class="book-name" title="${book.details}">${book.name}</span>
-                <span class="book-price">$${book.price.toFixed(2)}</span>
-                <span class="item-actions">
-                    <button class="edit-btn" onclick="library.editBook(${book.id})">Edit</button>
-                    <button class="delete-btn" onclick="library.deleteBook(${book.id})">Delete</button>
-                </span>
-            </div>
+            <tr>
+                <td>${book.barcode}</td>
+                <td>${book.name}</td>
+                <td>₹${book.price.toFixed(2)}</td>
+                <td>${book.details || 'N/A'}</td>
+                <td>${new Date(book.dateAdded).toLocaleDateString()}</td>
+            </tr>
         `).join('');
         
-        booksListElement.innerHTML = booksHTML;
+        booksContainer.innerHTML = booksHTML;
     }
     
     addToBill(barcode) {
@@ -613,11 +611,11 @@ class LibraryInventorySystem {
     }
     
     displayBill() {
-        const billItemsList = document.getElementById('bill-items-list');
+        const billItemsList = document.getElementById('bill-items');
         const billTotalElement = document.getElementById('bill-total');
         
         if (this.currentBill.length === 0) {
-            billItemsList.innerHTML = '<div class="no-items">No items in bill.</div>';
+            billItemsList.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No items in bill.</td></tr>';
             billTotalElement.textContent = '0.00';
             return;
         }
@@ -625,19 +623,21 @@ class LibraryInventorySystem {
         const billHTML = this.currentBill.map(item => {
             const total = item.price * item.quantity;
             return `
-                <div class="bill-item">
-                    <span class="item-name">${item.name}</span>
-                    <span class="item-price">$${item.price.toFixed(2)}</span>
-                    <span class="quantity-controls">
-                        <button class="qty-btn" onclick="library.updateBillItemQuantity('${item.barcode}', -1)">-</button>
-                        <span class="qty-display">${item.quantity}</span>
-                        <button class="qty-btn" onclick="library.updateBillItemQuantity('${item.barcode}', 1)">+</button>
-                    </span>
-                    <span class="item-total">$${total.toFixed(2)}</span>
-                    <span class="item-actions">
+                <tr>
+                    <td class="item-name">${item.name}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>
+                        <div class="quantity-controls">
+                            <button class="qty-btn" onclick="library.updateBillItemQuantity('${item.barcode}', -1)">-</button>
+                            <span class="qty-display">${item.quantity}</span>
+                            <button class="qty-btn" onclick="library.updateBillItemQuantity('${item.barcode}', 1)">+</button>
+                        </div>
+                    </td>
+                    <td>₹${total.toFixed(2)}</td>
+                    <td>
                         <button class="delete-btn" onclick="library.removeFromBill('${item.barcode}')">Remove</button>
-                    </span>
-                </div>
+                    </td>
+                </tr>
             `;
         }).join('');
         
@@ -668,10 +668,7 @@ class LibraryInventorySystem {
         
         const total = this.currentBill.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         
-        if (confirm(`Process payment of $${total.toFixed(2)}?`)) {
-            // In a real application, you would process the payment here
-            // and save the transaction to a database
-            
+        if (confirm(`Process payment of ₹${total.toFixed(2)}?`)) {
             const transaction = {
                 id: Date.now(),
                 items: [...this.currentBill],
@@ -680,14 +677,13 @@ class LibraryInventorySystem {
                 processedBy: this.currentUser
             };
             
-            // Save transaction to localStorage (in production, use a proper database)
             const transactions = JSON.parse(localStorage.getItem('libraryTransactions') || '[]');
             transactions.push(transaction);
             localStorage.setItem('libraryTransactions', JSON.stringify(transactions));
             
             this.currentBill = [];
             this.displayBill();
-            this.showMessage(`Payment processed successfully! Total: $${total.toFixed(2)}`, 'success');
+            this.showMessage(`Payment processed successfully! Total: ₹${total.toFixed(2)}`, 'success');
         }
     }
     
@@ -699,9 +695,9 @@ class LibraryInventorySystem {
         const totalValue = this.books.reduce((sum, book) => sum + book.price, 0);
         
         totalBooksElement.textContent = totalBooks;
-        totalValueElement.textContent = `$${totalValue.toFixed(2)}`;
+        totalValueElement.textContent = `₹${totalValue.toFixed(2)}`;
     }
-    
+        
     saveBooks() {
         localStorage.setItem('libraryBooks', JSON.stringify(this.books));
     }

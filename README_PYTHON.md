@@ -2,7 +2,7 @@
 
 A reliable library inventory management system using Python Flask backend with **pyzbar** for professional barcode scanning.
 
-## 🚀 **Features**
+##  **Features**
 
 - **✅ Reliable Barcode Scanning**: Uses Python `pyzbar` + `opencv` (much more reliable than JavaScript libraries)
 - **📱 Mobile-Friendly**: Responsive web interface that works on all devices
@@ -121,7 +121,7 @@ library-inventory/
 - **books.csv**: Barcode, Name, Price, Details, Date Added
 - **transactions.csv**: Transaction ID, Items, Total, Date, Processed By
 
-## 🚀 **Why This is Better**
+##  **Why This is Better**
 
 ### **vs JavaScript Barcode Libraries:**
 - ✅ **More Reliable**: pyzbar is industry-standard

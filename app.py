@@ -13,6 +13,14 @@ from werkzeug.security import check_password_hash, generate_password_hash
 app = Flask(__name__)
 app.secret_key = 'library_secret_key_2024'  # Change this in production
 
+def extract_barcode_only(decoded_list):
+    """Return only barcodes, ignore QR codes."""
+    for code in decoded_list:
+        if code.type.upper() != "QRCODE":
+            return code.data.decode("utf-8"), code.type
+    return None, None
+
+
 # Initialize CSV files
 def init_csv_files():
     # Initialize books.csv if it doesn't exist
@@ -21,11 +29,12 @@ def init_csv_files():
             writer = csv.writer(file)
             writer.writerow(['barcode', 'name', 'price', 'details', 'date_added'])
     
-    # Initialize transactions.csv if it doesn't exist
+    # Initialize transactions.csv if it doesn't exist - UPDATED with customer_name
     if not os.path.exists('transactions.csv'):
         with open('transactions.csv', 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(['id', 'items', 'total', 'date', 'processed_by'])
+            writer.writerow(['id', 'customer_name', 'items', 'total', 'date', 'processed_by'])
+
 
 # Global variables for camera scanning
 camera_active = {}
@@ -179,14 +188,15 @@ def get_all_books():
         print(f"Error reading books: {e}")
     return books
 
-def save_transaction(items, total, processed_by):
-    """Save transaction to CSV"""
+def save_transaction(items, total, customer_name, processed_by):
+    """Save transaction to CSV with customer name"""
     try:
         transaction_id = datetime.now().strftime('%Y%m%d%H%M%S')
         with open('transactions.csv', 'a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow([
                 transaction_id,
+                customer_name,
                 json.dumps(items),
                 total,
                 datetime.now().isoformat(),
@@ -333,42 +343,49 @@ def scan_barcode():
         barcodes = []
         
         # 1. Try original image
-        barcodes = decode(img)
-        if barcodes:
-            barcode_data = barcodes[0].data.decode('utf-8')
-            print(f"🎯 Barcode detected (original): {barcode_data}")
+        decoded = decode(img)
+        barcode_data, code_type = extract_barcode_only(decoded)
+
+        if barcode_data:
+            print(f"🎯 Detected {code_type}: {barcode_data}")
             return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
+        else:
+            print("⚪ QR or no barcode — ignored")
+
         
         # 2. Try grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        barcodes = decode(gray)
-        if barcodes:
-            barcode_data = barcodes[0].data.decode('utf-8')
-            print(f"🎯 Barcode detected (grayscale): {barcode_data}")
+        decoded = decode(gray)
+        barcode_data, code_type = extract_barcode_only(decoded)
+
+        if barcode_data:
+            print(f"🎯 Detected {code_type}: {barcode_data}")
             return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
         
         # 3. Try with increased contrast
         gray = cv2.equalizeHist(gray)
-        barcodes = decode(gray)
-        if barcodes:
-            barcode_data = barcodes[0].data.decode('utf-8')
-            print(f"🎯 Barcode detected (contrast): {barcode_data}")
+        decoded = decode(gray)
+        barcode_data, code_type = extract_barcode_only(decoded)
+
+        if barcode_data:
+            print(f"🎯 Detected {code_type}: {barcode_data}")
             return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
         
         # 4. Try with thresholding
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        barcodes = decode(thresh)
-        if barcodes:
-            barcode_data = barcodes[0].data.decode('utf-8')
-            print(f"🎯 Barcode detected (threshold): {barcode_data}")
+        decoded = decode(thresh)
+        barcode_data, code_type = extract_barcode_only(decoded)
+
+        if barcode_data:
+            print(f"🎯 Detected {code_type}: {barcode_data}")
             return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
         
         # 5. Try inverted
         inverted = cv2.bitwise_not(thresh)
-        barcodes = decode(inverted)
-        if barcodes:
-            barcode_data = barcodes[0].data.decode('utf-8')
-            print(f"🎯 Barcode detected (inverted): {barcode_data}")
+        decoded = decode(inverted)
+        barcode_data, code_type = extract_barcode_only(decoded)
+        if barcode_data:
+            print(f"🎯 Detected {code_type}: {barcode_data}")
             return jsonify({'detected': True, 'barcode': barcode_data, 'success': True})
         
         # No barcode found
@@ -430,22 +447,54 @@ def process_bill():
         data = request.get_json()
         items = data.get('items', [])
         total = data.get('total', 0)
+        customer_name = data.get('customer_name', '').strip()
         
         if not items:
             return jsonify({'error': 'No items in bill'}), 400
         
-        success, transaction_id = save_transaction(items, total, session['user'])
+        if not customer_name:
+            return jsonify({'error': 'Customer name is required'}), 400
+        
+        success, transaction_id = save_transaction(items, total, customer_name, session['user'])
         
         if success:
             return jsonify({
                 'success': True,
                 'transaction_id': transaction_id,
-                'message': f'Transaction processed successfully. ID: {transaction_id}'
+                'message': f'Transaction processed successfully for {customer_name}. ID: {transaction_id}'
             })
         else:
             return jsonify({'error': f'Failed to save transaction: {transaction_id}'}), 500
     
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/transactions', methods=['GET'])
+def get_transactions():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        transactions = []
+        with open('transactions.csv', 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                transactions.append({
+                    'id': row['id'],
+                    'customer_name': row['customer_name'],
+                    'items': json.loads(row['items']),
+                    'total': float(row['total']),
+                    'date': row['date'],
+                    'processed_by': row['processed_by']
+                })
+        
+        # Sort by date, most recent first
+        transactions.sort(key=lambda x: x['date'], reverse=True)
+        
+        return jsonify({'transactions': transactions})
+        
+    except Exception as e:
+        print(f"Error reading transactions: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stats')
@@ -464,7 +513,7 @@ def stats():
 
 if __name__ == '__main__':
     init_csv_files()
-    print("🚀 Library Inventory System Starting...")
+    print(" Library Inventory System Starting...")
     print("📚 Using reliable Python barcode scanning with pyzbar")
     print("🌐 Access at: https://localhost:8080")
     print("👤 Login: admin / admin123")

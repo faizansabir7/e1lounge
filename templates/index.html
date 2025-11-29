@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Library Inventory System</title>
+    <title>E1 Library</title>
     <style>
         /* Reset and Base Styles */
         * {
@@ -12,84 +12,117 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --background-color: #ecf0f1;
+            --card-background: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #bdc3c7;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
         }
 
         /* Header */
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: var(--primary-color);
             color: white;
-            padding: 20px;
+            padding: 1rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         header h1 {
-            font-size: 24px;
+            font-size: 1.5rem;
             font-weight: 600;
+            letter-spacing: -0.5px;
         }
 
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .user-info {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.1);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            white-space: nowrap;
         }
 
         .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
         /* Navigation */
         .main-nav {
             display: flex;
-            background: white;
-            border-bottom: 2px solid #dee2e6;
+            background-color: var(--card-background);
+            border-bottom: 1px solid var(--border-color);
             overflow-x: auto;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            -webkit-overflow-scrolling: touch;
         }
 
         .nav-btn {
             flex: 1;
-            padding: 15px 20px;
+            padding: 1rem 1.5rem;
             border: none;
             background: transparent;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 0.95rem;
             font-weight: 500;
-            color: #6c757d;
-            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
             border-bottom: 3px solid transparent;
             white-space: nowrap;
+            min-width: 140px;
         }
 
-        .nav-btn:hover,
+        .nav-btn:hover {
+            color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
         .nav-btn.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.05);
         }
 
         /* Sections */
         .section {
             display: none;
-            padding: 30px;
-            max-width: 1200px;
+            padding: 1.5rem;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -99,304 +132,501 @@
 
         /* Camera Container */
         .camera-container {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
         }
 
         .camera-container h3 {
-            margin-bottom: 20px;
-            color: #333;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .video-wrapper {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            justify-content: center;
+            margin-bottom: 1rem;
         }
 
-        #video {
+        #video, #video-bill {
             width: 100%;
-            max-width: 500px;
+            max-width: 320px;
             height: auto;
-            border-radius: 10px;
-            border: 3px solid #667eea;
-            display: block;
-            margin: 0 auto;
+            aspect-ratio: 4/3;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            background-color: #000;
         }
 
-        #canvas {
+        #canvas, #canvas-bill {
             display: none;
         }
 
         .camera-controls {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
         .camera-btn {
-            background: #667eea;
+            background-color: var(--secondary-color);
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 0.625rem 1.25rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
-            margin: 0 10px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
-        .camera-btn:hover {
-            background: #5a6fd8;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        .camera-btn:hover:not(:disabled) {
+            background-color: #2980b9;
+            box-shadow: var(--shadow-hover);
         }
 
         .camera-btn:disabled {
-            background: #ccc;
+            background-color: var(--border-color);
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+            opacity: 0.6;
         }
 
         .stop-btn {
-            background: #dc3545;
+            background-color: var(--accent-color);
         }
 
-        .stop-btn:hover {
-            background: #c82333;
+        .stop-btn:hover:not(:disabled) {
+            background-color: #c0392b;
         }
 
         .scan-result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
+            margin-top: 1rem;
+            padding: 0.875rem;
+            border-radius: 4px;
             text-align: center;
             font-weight: 500;
+            font-size: 0.9rem;
         }
 
         .scan-result.success {
-            background: #d4edda;
+            background-color: #d4edda;
             border: 1px solid #c3e6cb;
             color: #155724;
         }
 
         .scan-result.error {
-            background: #f8d7da;
+            background-color: #f8d7da;
             border: 1px solid #f5c6cb;
             color: #721c24;
         }
 
         /* Forms */
         .form-container {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-container h3 {
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.25rem;
         }
 
         .input-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 0.5rem;
             font-weight: 500;
-            color: #555;
+            color: var(--text-primary);
+            font-size: 0.9rem;
         }
 
         .input-group input,
         .input-group textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
 
         .input-group input:focus,
         .input-group textarea:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
         .form-actions {
             display: flex;
-            gap: 15px;
-            margin-top: 25px;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .btn {
-            padding: 12px 25px;
+            padding: 0.75rem 1.25rem;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 4px;
+            font-size: 0.95rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 120px;
         }
 
         .btn-primary {
-            background: #667eea;
+            background-color: var(--secondary-color);
             color: white;
         }
 
         .btn-primary:hover {
-            background: #5a6fd8;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            background-color: #2980b9;
+            box-shadow: var(--shadow-hover);
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background-color: var(--text-secondary);
             color: white;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background-color: #5a6c7d;
         }
 
         /* Stats Cards */
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
+            background-color: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 8px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--secondary-color);
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
         }
 
         .stat-card h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
-            opacity: 0.9;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .stat-card .value {
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--secondary-color);
         }
 
-        /* Inventory List */
+        /* Inventory List - Table Format */
         .inventory-container {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .inventory-container h2 {
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+            font-size: 1.35rem;
+            font-weight: 600;
         }
 
         .search-container {
             display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .search-container input {
             flex: 1;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
+            min-width: 200px;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.95rem;
         }
 
-        .books-list {
+        .search-container input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .table-wrapper {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .book-item {
-            padding: 15px;
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            min-width: 600px;
+        }
+
+        .inventory-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .inventory-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .inventory-table td {
+            padding: 1rem;
             border-bottom: 1px solid #f1f3f4;
-            display: grid;
-            grid-template-columns: 1.5fr 2fr 1fr 2fr 1fr;
-            gap: 15px;
-            align-items: center;
+            font-size: 0.9rem;
         }
 
-        .book-item:last-child {
+        .inventory-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .inventory-table tbody tr:last-child td {
             border-bottom: none;
         }
 
-        .book-item.header {
-            background: #f8f9fa;
-            font-weight: 600;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-
-        /* Billing */
+        /* Billing - Professional Bill Structure */
         .bill-container {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            max-width: 900px;
+            margin: 0 auto;
         }
 
-        .bill-item {
-            padding: 12px;
-            border-bottom: 1px solid #f1f3f4;
-            display: grid;
-            grid-template-columns: 2fr 1fr 80px 1fr 80px;
-            gap: 15px;
-            align-items: center;
+        .bill-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-color);
         }
 
-        .bill-total {
+        .bill-header h3 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .bill-header p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 1.5rem;
+        }
+
+        .bill-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            min-width: 550px;
+        }
+
+        .bill-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .bill-table th {
+            padding: 0.875rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bill-table th:nth-child(2),
+        .bill-table th:nth-child(3),
+        .bill-table th:nth-child(4) {
             text-align: right;
-            padding: 20px 0;
-            font-size: 20px;
-            font-weight: bold;
-            color: #667eea;
-            border-top: 2px solid #667eea;
-            margin-top: 20px;
+        }
+
+        .bill-table th:nth-child(5) {
+            text-align: center;
+        }
+
+        .bill-table td {
+            padding: 1rem 0.875rem;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        .bill-table td:nth-child(2),
+        .bill-table td:nth-child(4) {
+            text-align: right;
+        }
+
+        .bill-table td:nth-child(3) {
+            text-align: right;
+        }
+
+        .bill-table td:nth-child(5) {
+            text-align: center;
+        }
+
+        .bill-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .bill-table tbody tr:last-child td {
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .item-name {
+            font-weight: 500;
+            color: var(--text-primary);
         }
 
         .quantity-controls {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .qty-display {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
         }
 
         .qty-btn {
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border: none;
-            border-radius: 5px;
-            background: #667eea;
+            border-radius: 4px;
+            background-color: var(--secondary-color);
             color: white;
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
         }
 
         .qty-btn:hover {
-            background: #5a6fd8;
+            background-color: #2980b9;
         }
 
         .delete-btn {
-            background: #dc3545;
+            background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
+            padding: 0.5rem 0.875rem;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         .delete-btn:hover {
-            background: #c82333;
+            background-color: #c0392b;
+        }
+
+        .bill-summary {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+        }
+
+        .bill-summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .bill-summary-row.total {
+            border-top: 2px solid var(--primary-color);
+            margin-top: 0.75rem;
+            padding-top: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .bill-summary-row .label {
+            color: var(--text-secondary);
+        }
+
+        .bill-summary-row .value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .bill-summary-row.total .value {
+            color: var(--primary-color);
+        }
+
+        .empty-bill {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
         }
 
         /* Messages */
@@ -404,26 +634,27 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            border-radius: 4px;
             color: white;
             font-weight: 500;
             z-index: 1000;
             animation: slideIn 0.3s ease;
-            max-width: 300px;
-            word-wrap: break-word;
+            max-width: 350px;
+            box-shadow: var(--shadow-hover);
+            font-size: 0.9rem;
         }
 
         .message.success {
-            background: #28a745;
+            background-color: var(--success-color);
         }
 
         .message.error {
-            background: #dc3545;
+            background-color: var(--accent-color);
         }
 
         .message.info {
-            background: #17a2b8;
+            background-color: var(--secondary-color);
         }
 
         @keyframes slideIn {
@@ -437,59 +668,84 @@
             }
         }
 
-        .scan-info {
-            background: #e8f5e8;
-            border: 1px solid #c3e6cb;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .scan-info p {
-            margin: 5px 0;
-            color: #155724;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        #video, #video-bill {
-            border: 3px solid #28a745;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            max-width: 100%;
-        }
-
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.25rem;
+            }
+
             .section {
-                padding: 20px;
+                padding: 1rem;
             }
 
             .camera-container,
             .form-container,
             .inventory-container,
             .bill-container {
-                padding: 20px;
+                padding: 1.25rem;
+            }
+
+            #video, #video-bill {
+                max-width: 280px;
             }
 
             .stats {
                 grid-template-columns: 1fr;
             }
 
-            .form-actions {
+            .form-actions,
+            .camera-controls {
                 flex-direction: column;
             }
 
-            .book-item,
-            .bill-item {
-                grid-template-columns: 1fr;
-                text-align: center;
-                gap: 8px;
+            .btn {
+                width: 100%;
             }
 
-            .book-item.header {
-                display: none;
+            .message {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+
+            .bill-header h3 {
+                font-size: 1.25rem;
+            }
+
+            .bill-summary {
+                padding: 1rem;
+            }
+
+            .bill-summary-row.total {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-btn {
+                padding: 0.75rem 1rem;
+                font-size: 0.85rem;
+                min-width: 100px;
+            }
+
+            #video, #video-bill {
+                max-width: 240px;
+            }
+
+            .camera-btn {
+                font-size: 0.85rem;
+                padding: 0.5rem 1rem;
+            }
+        }
+
+        /* Desktop larger video */
+        @media (min-width: 1024px) {
+            #video, #video-bill {
+                max-width: 400px;
             }
         }
     </style>
@@ -497,18 +753,18 @@
 <body>
     <!-- Header -->
     <header>
-        <h1>📚 Library Inventory System</h1>
+        <h1>E1 Library</h1>
         <div class="header-actions">
-            <span>Welcome, admin</span>
-            <a href="/logout" class="logout-btn">Logout</a>
+            <span class="user-info">Administrator</span>
+            <a href="/logout" class="logout-btn">Sign Out</a>
         </div>
     </header>
 
     <!-- Navigation -->
     <nav class="main-nav">
-        <button class="nav-btn active" data-section="inventory">📊 Inventory</button>
-        <button class="nav-btn" data-section="add-book">➕ Add Book</button>
-        <button class="nav-btn" data-section="billing">💳 Billing</button>
+        <button class="nav-btn active" data-section="inventory">Inventory Overview</button>
+        <button class="nav-btn" data-section="add-book">Add New Book</button>
+        <button class="nav-btn" data-section="billing">Point of Sale</button>
     </nav>
 
     <!-- Inventory Section -->
@@ -521,26 +777,41 @@
             </div>
             <div class="stat-card">
                 <h3>Total Value</h3>
-                <div class="value" id="total-value">$0.00</div>
+                <div class="value" id="total-value">₹0.00</div>
             </div>
         </div>
 
         <!-- Search -->
         <div class="inventory-container">
-            <h2>📚 Book Inventory</h2>
+            <h2>Book Inventory</h2>
             <div class="search-container">
-                <input type="text" id="search-books" placeholder="Search books by name, barcode, or details...">
+                <input type="text" id="search-books" placeholder="Search by book name, barcode, or details...">
                 <button class="btn btn-secondary" id="clear-search">Clear</button>
             </div>
-            <div class="books-list">
-                <div class="book-item header">
-                    <span>Barcode</span>
-                    <span>Book Name</span>
-                    <span>Price</span>
-                    <span>Details</span>
-                    <span>Date Added</span>
-                </div>
-                <div id="books-container"></div>
+            <div class="table-wrapper">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Book Name</th>
+                            <th>Price (₹)</th>
+                            <th>Details</th>
+                            <th>Date Added</th>
+                        </tr>
+                    </thead>
+                    <tbody id="books-container">
+                        <!-- Books will be populated here dynamically via JavaScript -->
+                        <!-- Example structure for JavaScript to follow:
+                        <tr>
+                            <td>9789386905048</td>
+                            <td>Paavangal</td>
+                            <td>₹350.00</td>
+                            <td>N/A</td>
+                            <td>11/29/2025</td>
+                        </tr>
+                        -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -549,42 +820,40 @@
     <div id="add-book-section" class="section">
         <!-- Camera Scanning -->
         <div class="camera-container">
-            <h3>📷 Automatic Barcode Scanner</h3>
-            <div class="scan-info">
-            <p>✨ <strong>Auto-Detection:</strong> Just point camera at barcode - it will automatically detect and stop!</p>
-            <p>🔄 <strong>Continuous Scanning:</strong> Uses your reliable Python pyzbar library</p>
+            <h3>Barcode Scanner</h3>
+            <div class="video-wrapper">
+                <video id="video" autoplay muted playsinline style="display: none;"></video>
             </div>
-            <video id="video" autoplay muted playsinline style="display: none; width: 300px; height: 225px;"></video>
             <canvas id="canvas" style="display: none;"></canvas>
             <div class="camera-controls">
-            <button class="camera-btn" id="start-camera">🚀 Start Auto-Scanning</button>
-            <button class="camera-btn stop-btn" id="stop-camera" disabled>⏹️ Stop Scanning</button>
+                <button class="camera-btn" id="start-camera">Start Scanner</button>
+                <button class="camera-btn stop-btn" id="stop-camera" disabled>Stop Scanner</button>
             </div>
             <div id="scan-result" class="scan-result" style="display: none;"></div>
         </div>
 
         <!-- Add Book Form -->
         <div class="form-container">
-            <h3>📖 Add New Book</h3>
+            <h3>Add New Book</h3>
             <form id="add-book-form">
                 <div class="input-group">
-                    <label for="book-barcode">Barcode:</label>
-                    <input type="text" id="book-barcode" required>
+                    <label for="book-barcode">Barcode *</label>
+                    <input type="text" id="book-barcode" placeholder="Enter or scan barcode" required>
                 </div>
                 <div class="input-group">
-                    <label for="book-name">Book Name:</label>
-                    <input type="text" id="book-name" required>
+                    <label for="book-name">Book Name *</label>
+                    <input type="text" id="book-name" placeholder="Enter book title" required>
                 </div>
                 <div class="input-group">
-                    <label for="book-price">Price:</label>
-                    <input type="number" id="book-price" step="0.01" required>
+                    <label for="book-price">Price (₹) *</label>
+                    <input type="number" id="book-price" step="0.01" placeholder="0.00" required>
                 </div>
                 <div class="input-group">
-                    <label for="book-details">Details:</label>
-                    <textarea id="book-details" rows="3"></textarea>
+                    <label for="book-details">Additional Details</label>
+                    <textarea id="book-details" rows="4" placeholder="Author, publisher, edition, etc."></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Add Book</button>
+                    <button type="submit" class="btn btn-primary">Add Book to Inventory</button>
                     <button type="button" class="btn btn-secondary" id="clear-form">Clear Form</button>
                 </div>
             </form>
@@ -593,38 +862,82 @@
 
     <!-- Billing Section -->
     <div id="billing-section" class="section">
+        <!-- Manual Barcode Entry -->
+        <div class="form-container">
+            <h3>Manual Barcode Entry</h3>
+            <div class="input-group" style="position: relative;">
+                <label for="manual-barcode-bill">Enter Barcode or Book Name</label>
+                <input 
+                    type="text" 
+                    id="manual-barcode-bill" 
+                    placeholder="Type barcode or search by book name..."
+                    autocomplete="off"
+                >
+                <div id="barcode-suggestions" class="suggestions-dropdown"></div>
+            </div>
+            <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 0.5rem;">
+                💡 Press Enter to add, or select from suggestions
+            </p>
+        </div>
+
         <!-- Camera for Billing -->
         <div class="camera-container">
-            <h3>🔍 Automatic Item Scanner for Billing</h3>
-            <div class="scan-info">
-                <p>✨ <strong>Auto-Detection:</strong> Point camera at item barcode - auto-adds to bill!</p>
-                <p>🔄 <strong>Continuous Scanning:</strong> Uses your reliable Python pyzbar library</p>
+            <h3>Barcode Scanner</h3>
+            <div class="video-wrapper">
+                <video id="video-bill" autoplay muted playsinline style="display: none;"></video>
             </div>
-            <video id="video-bill" autoplay muted playsinline style="display: none;"></video>
             <canvas id="canvas-bill" style="display: none;"></canvas>
             <div class="camera-controls">
-                <button class="camera-btn" id="start-camera-bill">🚀 Start Auto-Scanning</button>
-                <button class="camera-btn stop-btn" id="stop-camera-bill" disabled>⏹️ Stop Scanning</button>
+                <button class="camera-btn" id="start-camera-bill">Start Scanner</button>
+                <button class="camera-btn stop-btn" id="stop-camera-bill" disabled>Stop Scanner</button>
             </div>
             <div id="scan-result-bill" class="scan-result" style="display: none;"></div>
         </div>
 
         <!-- Current Bill -->
         <div class="bill-container">
-            <h3>🧾 Current Bill</h3>
-            <div class="bill-item header" style="font-weight: bold;">
-                <span>Item</span>
-                <span>Price</span>
-                <span>Qty</span>
-                <span>Total</span>
-                <span>Action</span>
+            <div class="bill-header">
+                <h3>SALES INVOICE</h3>
+                <p>Transaction Bill</p>
             </div>
-            <div id="bill-items"></div>
-            <div class="bill-total">
-                Total: $<span id="bill-total">0.00</span>
+
+            <!-- Customer Name Input -->
+            <div class="input-group" style="margin-bottom: 1.5rem;">
+                <label for="customer-name">Customer Name *</label>
+                <input 
+                    type="text" 
+                    id="customer-name" 
+                    placeholder="Enter customer name"
+                    required
+                >
             </div>
+            
+            <div class="table-wrapper">
+                <table class="bill-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bill-items">
+                        <!-- Bill items will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bill-summary">
+                <div class="bill-summary-row total">
+                    <span class="label">Total Amount:</span>
+                    <span class="value">₹ <span id="bill-total">0.00</span></span>
+                </div>
+            </div>
+
             <div class="form-actions">
-                <button class="btn btn-secondary" id="clear-bill">Clear Bill</button>
+                <button class="btn btn-secondary" id="clear-bill">Clear Transaction</button>
                 <button class="btn btn-primary" id="process-bill">Process Payment</button>
             </div>
         </div>
