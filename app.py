@@ -51,7 +51,7 @@ def decode_barcode_from_image(img_data):
         return None
 
 def continuous_scan_opencv(session_id, scan_type):
-    """Continuous barcode scanning using OpenCV like your original code"""
+    """Continuous barcode scanning using OpenCV with enhanced detection"""
     try:
         # Initialize camera
         cap = cv2.VideoCapture(0)
@@ -64,21 +64,53 @@ def continuous_scan_opencv(session_id, scan_type):
             success, img = cap.read()
             if not success:
                 continue
-                
-            # Try to decode barcode from current frame
+            
+            # Try multiple preprocessing techniques for better detection
+            # 1. Try original image
             barcodes = decode(img)
             if barcodes:
                 barcode_data = barcodes[0].data.decode('utf-8')
-                print(f"🎯 Barcode detected: {barcode_data}")
-                
-                # Store the result
+                print(f"🎯 Desktop barcode detected (original): {barcode_data}")
                 scan_results[session_id] = barcode_data
-                
-                # Stop scanning once barcode is found
                 camera_active[session_id] = False
                 scanning_active[session_id] = False
                 cap.release()
-                
+                return barcode_data
+            
+            # 2. Try grayscale
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            barcodes = decode(gray)
+            if barcodes:
+                barcode_data = barcodes[0].data.decode('utf-8')
+                print(f"🎯 Desktop barcode detected (grayscale): {barcode_data}")
+                scan_results[session_id] = barcode_data
+                camera_active[session_id] = False
+                scanning_active[session_id] = False
+                cap.release()
+                return barcode_data
+            
+            # 3. Try with increased contrast
+            gray_eq = cv2.equalizeHist(gray)
+            barcodes = decode(gray_eq)
+            if barcodes:
+                barcode_data = barcodes[0].data.decode('utf-8')
+                print(f"🎯 Desktop barcode detected (contrast): {barcode_data}")
+                scan_results[session_id] = barcode_data
+                camera_active[session_id] = False
+                scanning_active[session_id] = False
+                cap.release()
+                return barcode_data
+            
+            # 4. Try with thresholding
+            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            barcodes = decode(thresh)
+            if barcodes:
+                barcode_data = barcodes[0].data.decode('utf-8')
+                print(f"🎯 Desktop barcode detected (threshold): {barcode_data}")
+                scan_results[session_id] = barcode_data
+                camera_active[session_id] = False
+                scanning_active[session_id] = False
+                cap.release()
                 return barcode_data
             
             # Small delay to prevent excessive CPU usage
@@ -90,7 +122,7 @@ def continuous_scan_opencv(session_id, scan_type):
         return None
         
     except Exception as e:
-        print(f"Error in continuous scan: {e}")
+        print(f"❌ Desktop scan error: {e}")
         camera_active[session_id] = False
         scanning_active[session_id] = False
         return None
