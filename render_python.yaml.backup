@@ -1,14 +1,15 @@
 services:
   - type: web
     name: library-inventory-system
-    runtime: docker
+    runtime: python
     region: oregon
     plan: free
+    pythonVersion: "3.11.7"
+    buildCommand: bash build.sh
+    startCommand: gunicorn app:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: PORT
-        value: 10000
     autoDeploy: true
