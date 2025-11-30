@@ -1,0 +1,10 @@
+# Files to ignore during Render deployment
+cert.pem
+key.pem
+*.DS_Store
+.git/
+.vscode/
+.idea/
+tmp_*
+temp_*
+*.log

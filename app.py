@@ -11,7 +11,8 @@ import os
 from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'library_secret_key_2024'  # Change this in production
+# Use environment variable for secret key in production, fallback for development
+app.secret_key = os.environ.get('SECRET_KEY', 'library_secret_key_2024')
 
 def extract_barcode_only(decoded_list):
     """Return only barcodes, ignore QR codes."""
@@ -513,9 +514,21 @@ def stats():
 
 if __name__ == '__main__':
     init_csv_files()
-    print(" Library Inventory System Starting...")
+    print("📚 Library Inventory System Starting...")
     print("📚 Using reliable Python barcode scanning with pyzbar")
-    print("🌐 Access at: https://localhost:8080")
-    print("👤 Login: admin / admin123")
-    # app.run(debug=True, host='0.0.0.0', port=8080)  # Use SSL in production
-    app.run(debug=True, host='0.0.0.0', port=8080,ssl_context=('cert.pem', 'key.pem'))  # Use SSL in productionF
+    
+    # Check if running in production (Render) or development
+    is_production = os.environ.get('RENDER', False)
+    port = int(os.environ.get('PORT', 8080))
+    
+    if is_production:
+        print("🌐 Running in PRODUCTION mode on Render")
+        print("👤 Login: admin / admin123")
+        # In production, gunicorn will handle the app
+        app.run(host='0.0.0.0', port=port)
+    else:
+        print("🌐 Running in DEVELOPMENT mode")
+        print(f"🌐 Access at: http://localhost:{port}")
+        print("👤 Login: admin / admin123")
+        # Development mode with debug
+        app.run(debug=True, host='0.0.0.0', port=port)
