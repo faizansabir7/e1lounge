@@ -61,6 +61,14 @@
             margin-bottom: 2rem;
         }
 
+        .login-logo {
+            width: 100px;
+            height: auto;
+            margin: 0 auto 1rem;
+            display: block;
+            object-fit: contain;
+        }
+
         .login-header h1 {
             color: var(--primary-color);
             font-size: 1.75rem;
@@ -175,6 +183,10 @@
                 padding: 2rem 1.5rem;
             }
 
+            .login-logo {
+                width: 60px;
+            }
+
             .login-header h1 {
                 font-size: 1.5rem;
             }
@@ -188,7 +200,7 @@
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>E1 Library</h1>
+            <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo" class="login-logo">
             <p>Administrator Access</p>
         </div>
 
@@ -209,7 +221,7 @@
         </form>
 
         <div class="footer-text">
-            © 2024 E1 Library
+            © 2025 E1 Library
         </div>
     </div>
 </body>

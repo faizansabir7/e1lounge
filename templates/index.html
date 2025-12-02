@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E1 Library</title>
+    <title>Library</title>
     <style>
         /* Reset and Base Styles */
         * {
@@ -47,10 +47,23 @@
             gap: 1rem;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
         header h1 {
             font-size: 1.5rem;
             font-weight: 600;
             letter-spacing: -0.5px;
+            margin: 0;
         }
 
         .header-actions {
@@ -674,6 +687,10 @@
                 padding: 1rem;
             }
 
+            .logo {
+                height: 32px;
+            }
+
             header h1 {
                 font-size: 1.25rem;
             }
@@ -753,7 +770,10 @@
 <body>
     <!-- Header -->
     <header>
-        <h1>E1 Library</h1>
+        <div class="header-left">
+            <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo" class="logo">
+            <h1>Library</h1>
+        </div>
         <div class="header-actions">
             <span class="user-info">Administrator</span>
             <a href="/logout" class="logout-btn">Sign Out</a>
