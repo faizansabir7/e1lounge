@@ -2,3 +2,4 @@ id,items,total,date,processed_by
 20251129172533,"[{""barcode"": ""9789391899486"", ""name"": ""KAMALA SURAYYA"", ""price"": 199, ""quantity"": 1}, {""barcode"": ""9788126421367"", ""name"": ""Daya enna penkutty"", ""price"": 150, ""quantity"": 1}]",349,2025-11-29T17:25:33.309945,admin
 20251129172714,"[{""barcode"": ""9789391899486"", ""name"": ""KAMALA SURAYYA"", ""price"": 199, ""quantity"": 1}, {""barcode"": ""9788126421367"", ""name"": ""Daya enna penkutty"", ""price"": 150, ""quantity"": 1}]",349,2025-11-29T17:27:14.481980,admin
 20251129184123,Faizan,"[{""barcode"": ""9789391899486"", ""name"": ""KAMALA SURAYYA"", ""price"": 199, ""quantity"": 1}]",199,2025-11-29T18:41:23.982915,admin
+20251202215610,test,"[{""barcode"": ""9789391899486"", ""name"": ""KAMALA SURAYYA"", ""price"": 199, ""quantity"": 1, ""availableStock"": 5}]",199,2025-12-02T21:56:10.592774,admin

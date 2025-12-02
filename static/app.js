@@ -39,6 +39,14 @@ class LibraryInventorySystem {
             this.clearBookForm();
         });
         
+        // Check for existing book when barcode is entered
+        document.getElementById('book-barcode').addEventListener('blur', async (e) => {
+            const barcode = e.target.value.trim();
+            if (barcode) {
+                await this.checkExistingBook(barcode);
+            }
+        });
+        
         // Add Book Scanner
         document.getElementById('start-camera').addEventListener('click', () => {
             this.startScanner('add');
@@ -454,7 +462,7 @@ class LibraryInventorySystem {
         }
     }
     
-    handleScanResult(barcode, type) {
+    async handleScanResult(barcode, type) {
         const scanType = type === 'add' ? '' : '-bill';
         const resultDiv = document.getElementById(`scan-result${scanType}`);
         
@@ -464,9 +472,31 @@ class LibraryInventorySystem {
         
         if (type === 'add') {
             document.getElementById('book-barcode').value = barcode;
-            document.getElementById('book-name').focus();
+            // Check if book exists immediately after scan
+            await this.checkExistingBook(barcode);
         } else if (type === 'bill') {
             this.addToBill(barcode);
+        }
+    }
+    
+    async checkExistingBook(barcode) {
+        if (!barcode) return;
+        
+        try {
+            const checkResponse = await fetch(`/api/book/${barcode}`);
+            
+            if (checkResponse.ok) {
+                const checkData = await checkResponse.json();
+                if (checkData.book) {
+                    // Book exists, show options dialog immediately
+                    this.showExistingBookDialog(checkData.book);
+                    return true;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error('Check existing book error:', error);
+            return false;
         }
     }
     
@@ -474,24 +504,38 @@ class LibraryInventorySystem {
         const barcode = document.getElementById('book-barcode').value.trim();
         const name = document.getElementById('book-name').value.trim();
         const price = document.getElementById('book-price').value.trim();
+        const quantity = document.getElementById('book-quantity').value.trim();
         const details = document.getElementById('book-details').value.trim();
         
-        if (!barcode || !name || !price) {
-            this.showMessage('Please fill all required fields', 'error');
+        if (!barcode) {
+            this.showMessage('Please enter a barcode', 'error');
             return;
         }
         
         try {
+            // Check if book already exists
+            const exists = await this.checkExistingBook(barcode);
+            if (exists) {
+                return; // Dialog already shown
+            }
+            
+            // New book - validate all fields
+            if (!name || !price) {
+                this.showMessage('Please fill all required fields (Name and Price)', 'error');
+                return;
+            }
+            
+            // Proceed with adding new book
             const response = await fetch('/api/books', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ barcode, name, price, details })
+                body: JSON.stringify({ barcode, name, price, quantity: quantity || 1, details })
             });
             
             const data = await response.json();
             
             if (response.ok && data.success) {
-                this.showMessage('Book added successfully!', 'success');
+                this.showMessage(data.message || 'Book added successfully!', 'success');
                 this.clearBookForm();
                 this.switchSection('inventory');
             } else {
@@ -504,10 +548,150 @@ class LibraryInventorySystem {
         }
     }
     
+    showExistingBookDialog(book) {
+        // Replace the form content with existing book options
+        const formContainer = document.getElementById('add-book-form');
+        
+        // Store original form HTML to restore later
+        if (!this.originalFormHTML) {
+            this.originalFormHTML = formContainer.innerHTML;
+        }
+        
+        formContainer.innerHTML = `
+            <div class="existing-book-container">
+                <div class="alert alert-warning">
+                    <strong>⚠️ Book Already Exists in Inventory</strong>
+                </div>
+                
+                <div class="existing-book-details">
+                    <h3>Current Book Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Barcode:</label>
+                            <span>${book.barcode}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Book Name:</label>
+                            <span>${book.name}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Price:</label>
+                            <span>₹${parseFloat(book.price).toFixed(2)}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Current Quantity:</label>
+                            <span class="quantity-badge">${book.quantity}</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <label>Details:</label>
+                            <span>${book.details || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="update-section">
+                    <h3>Update Quantity</h3>
+                    <div class="input-group">
+                        <label for="new-quantity">Set New Quantity:</label>
+                        <input type="number" id="new-quantity" min="0" value="${book.quantity}" class="quantity-input">
+                        <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
+                            Enter 0 to mark as out of stock, or any positive number
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <button type="button" class="btn btn-danger" onclick="library.deleteBook('${book.barcode}')">
+                        Delete Book
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="library.restoreAddBookForm()">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="library.updateBookQuantity('${book.barcode}')">
+                        qUpdate Quantity
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    restoreAddBookForm() {
+        const formContainer = document.getElementById('add-book-form');
+        if (this.originalFormHTML) {
+            formContainer.innerHTML = this.originalFormHTML;
+        }
+        this.clearBookForm();
+    }
+    
+    async updateBookQuantity(barcode) {
+        const newQuantity = document.getElementById('new-quantity').value;
+        
+        if (newQuantity === '' || newQuantity < 0) {
+            this.showMessage('Please enter a valid quantity (0 or greater)', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/update_book_quantity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    barcode: barcode, 
+                    quantity: parseInt(newQuantity) 
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                this.showMessage(data.message || 'Quantity updated successfully!', 'success');
+                this.restoreAddBookForm();
+                this.loadInventory();
+                this.updateStats();
+            } else {
+                this.showMessage(data.error || 'Failed to update quantity', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Update quantity error:', error);
+            this.showMessage('Error updating quantity', 'error');
+        }
+    }
+    
+    async deleteBook(barcode) {
+        if (!confirm('Are you sure you want to delete this book from inventory? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/delete_book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ barcode: barcode })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                this.showMessage('Book deleted successfully!', 'success');
+                this.restoreAddBookForm();
+                this.loadInventory();
+                this.updateStats();
+            } else {
+                this.showMessage(data.error || 'Failed to delete book', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Delete book error:', error);
+            this.showMessage('Error deleting book', 'error');
+        }
+    }
+    
     clearBookForm() {
         document.getElementById('book-barcode').value = '';
         document.getElementById('book-name').value = '';
         document.getElementById('book-price').value = '';
+        document.getElementById('book-quantity').value = '1';
         document.getElementById('book-details').value = '';
     }
     
@@ -529,7 +713,7 @@ class LibraryInventorySystem {
         const container = document.getElementById('books-container');
         
         if (books.length === 0) {
-            container.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #7f8c8d;">No books found</td></tr>';
+            container.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #7f8c8d;">No books found</td></tr>';
             return;
         }
         
@@ -538,6 +722,7 @@ class LibraryInventorySystem {
                 <td>${book.barcode}</td>
                 <td>${book.name}</td>
                 <td>₹${parseFloat(book.price).toFixed(2)}</td>
+                <td>${book.quantity || 0}</td>
                 <td>${book.details || 'N/A'}</td>
                 <td>${new Date(book.date_added).toLocaleDateString()}</td>
             </tr>
@@ -560,6 +745,7 @@ class LibraryInventorySystem {
             const data = await response.json();
             
             document.getElementById('total-books').textContent = data.total_books || 0;
+            document.getElementById('total-quantity').textContent = data.total_quantity || 0;
             document.getElementById('total-value').textContent = `₹${(data.total_value || 0).toFixed(2)}`;
             
         } catch (error) {
@@ -574,16 +760,29 @@ class LibraryInventorySystem {
             
             if (response.ok && data.book) {
                 const book = data.book;
+                
+                // Check if book has stock
+                if (book.quantity <= 0) {
+                    this.showMessage(`${book.name} is out of stock`, 'error');
+                    return;
+                }
+                
                 const existing = this.currentBill.find(item => item.barcode === barcode);
                 
                 if (existing) {
+                    // Check if adding more exceeds available stock
+                    if (existing.quantity >= book.quantity) {
+                        this.showMessage(`Cannot add more. Only ${book.quantity} available in stock`, 'error');
+                        return;
+                    }
                     existing.quantity += 1;
                 } else {
                     this.currentBill.push({
                         barcode: book.barcode,
                         name: book.name,
                         price: parseFloat(book.price),
-                        quantity: 1
+                        quantity: 1,
+                        availableStock: book.quantity
                     });
                 }
                 
@@ -704,8 +903,15 @@ class LibraryInventorySystem {
                 this.currentBill = [];
                 this.displayBill();
                 document.getElementById('customer-name').value = '';
+                // Reload inventory to show updated quantities
+                this.loadInventory();
+                this.updateStats();
             } else {
-                this.showMessage(data.error || 'Failed to process payment', 'error');
+                if (data.details) {
+                    this.showMessage(`${data.error}: ${data.details.join(', ')}`, 'error');
+                } else {
+                    this.showMessage(data.error || 'Failed to process payment', 'error');
+                }
             }
             
         } catch (error) {
