@@ -170,12 +170,12 @@
 
         #video, #video-bill {
             width: 100%;
-            max-width: 320px;
             height: auto;
-            aspect-ratio: 4/3;
+            max-height: 400px;
             border-radius: 6px;
             border: 2px solid var(--border-color);
             background-color: #000;
+            object-fit: cover;
         }
 
         #canvas, #canvas-bill {
@@ -707,7 +707,8 @@
             }
 
             #video, #video-bill {
-                max-width: 280px;
+                width: 100%;
+                max-width: 100%;
             }
 
             .stats {
@@ -750,7 +751,8 @@
             }
 
             #video, #video-bill {
-                max-width: 240px;
+                width: 100%;
+                max-width: 100%;
             }
 
             .camera-btn {
@@ -762,8 +764,42 @@
         /* Desktop larger video */
         @media (min-width: 1024px) {
             #video, #video-bill {
-                max-width: 400px;
+                width: 100%;
+                max-width: 600px;
             }
+        }
+
+        /* Flashlight button styles */
+        .flash-btn {
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: none;
+            margin-top: 0.5rem;
+        }
+
+        .flash-btn:hover:not(:disabled) {
+            background-color: #e67e22;
+            box-shadow: var(--shadow-hover);
+        }
+
+        .flash-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .flash-btn.flash-active {
+            background-color: #27ae60;
+        }
+
+        .flash-btn.flash-active:hover {
+            background-color: #229954;
         }
     </style>
 </head>
@@ -848,6 +884,7 @@
             <div class="camera-controls">
                 <button class="camera-btn" id="start-camera">Start Scanner</button>
                 <button class="camera-btn stop-btn" id="stop-camera" disabled>Stop Scanner</button>
+                <button class="flash-btn" id="flash-btn" disabled>💡 Flash: OFF</button>
             </div>
             <div id="scan-result" class="scan-result" style="display: none;"></div>
         </div>
@@ -910,6 +947,7 @@
             <div class="camera-controls">
                 <button class="camera-btn" id="start-camera-bill">Start Scanner</button>
                 <button class="camera-btn stop-btn" id="stop-camera-bill" disabled>Stop Scanner</button>
+                <button class="flash-btn" id="flash-btn-bill" disabled>💡 Flash: OFF</button>
             </div>
             <div id="scan-result-bill" class="scan-result" style="display: none;"></div>
         </div>
