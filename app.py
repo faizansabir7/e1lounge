@@ -5,7 +5,7 @@ import json
 import base64
 import numpy as np
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 from pyzbar.pyzbar import decode
 import os
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -29,11 +29,11 @@ def init_csv_files():
             writer = csv.writer(file)
             writer.writerow(['barcode', 'name', 'price', 'details', 'date_added', 'quantity'])
     
-    # Initialize transactions.csv if it doesn't exist - UPDATED with customer_name
+    # Initialize transactions.csv if it doesn't exist - Flattened format
     if not os.path.exists('transactions.csv'):
         with open('transactions.csv', 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(['id', 'customer_name', 'items', 'total', 'date', 'processed_by'])
+            writer.writerow(['transaction_id', 'item_name', 'item_quantity', 'item_price', 'customer_name', 'date', 'processed_by'])
 
 
 # Global variables for camera scanning
@@ -251,19 +251,26 @@ def reduce_book_quantity(barcode, quantity_to_reduce):
         return False, f"Error: {e}"
 
 def save_transaction(items, total, customer_name, processed_by):
-    """Save transaction to CSV with customer name"""
+    """Save transaction to CSV - one row per item for easy Excel viewing"""
     try:
         transaction_id = datetime.now().strftime('%Y%m%d%H%M%S')
+        transaction_date = datetime.now().isoformat()
+        
         with open('transactions.csv', 'a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow([
-                transaction_id,
-                customer_name,
-                json.dumps(items),
-                total,
-                datetime.now().isoformat(),
-                processed_by
-            ])
+            
+            # Write one row per item
+            for item in items:
+                writer.writerow([
+                    transaction_id,
+                    item.get('name', 'Unknown'),
+                    item.get('quantity', 1),
+                    item.get('price', 0),
+                    customer_name,
+                    transaction_date,
+                    processed_by
+                ])
+        
         return True, transaction_id
     except Exception as e:
         print(f"Error saving transaction: {e}")
@@ -295,6 +302,46 @@ def login():
 def logout():
     session.pop('user', None)
     return redirect(url_for('login'))
+
+@app.route('/api/download_inventory')
+def download_inventory():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        if os.path.exists('books.csv'):
+            return send_file(
+                'books.csv',
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f'inventory_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            )
+        else:
+            return jsonify({'error': 'Inventory file not found'}), 404
+    except Exception as e:
+        print(f"Error downloading inventory: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/download_transactions')
+def download_transactions():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        if not os.path.exists('transactions.csv'):
+            return jsonify({'error': 'Transactions file not found'}), 404
+        
+        # Transactions CSV is already in the correct flat format, just send it
+        return send_file(
+            'transactions.csv',
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'transactions_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        )
+            
+    except Exception as e:
+        print(f"Error downloading transactions: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # API Routes
 @app.route('/api/start_continuous_scan', methods=['POST'])
@@ -644,20 +691,38 @@ def get_transactions():
         return jsonify({'error': 'Not authenticated'}), 401
     
     try:
-        transactions = []
+        # Read flattened transactions and group by transaction_id
+        transactions_dict = {}
+        
         with open('transactions.csv', 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in reader:
-                transactions.append({
-                    'id': row['id'],
-                    'customer_name': row['customer_name'],
-                    'items': json.loads(row['items']),
-                    'total': float(row['total']),
-                    'date': row['date'],
-                    'processed_by': row['processed_by']
+                trans_id = row['transaction_id']
+                
+                if trans_id not in transactions_dict:
+                    transactions_dict[trans_id] = {
+                        'id': trans_id,
+                        'customer_name': row['customer_name'],
+                        'items': [],
+                        'total': 0,
+                        'date': row['date'],
+                        'processed_by': row['processed_by']
+                    }
+                
+                # Add item to transaction
+                item_price = float(row['item_price'])
+                item_qty = int(row['item_quantity'])
+                
+                transactions_dict[trans_id]['items'].append({
+                    'name': row['item_name'],
+                    'quantity': item_qty,
+                    'price': item_price
                 })
+                
+                transactions_dict[trans_id]['total'] += item_price * item_qty
         
-        # Sort by date, most recent first
+        # Convert to list and sort by date
+        transactions = list(transactions_dict.values())
         transactions.sort(key=lambda x: x['date'], reverse=True)
         
         return jsonify({'transactions': transactions})

@@ -126,6 +126,15 @@ class LibraryInventorySystem {
         document.getElementById('process-bill').addEventListener('click', () => {
             this.processBill();
         });
+        
+        // Download Buttons
+        document.getElementById('download-inventory-btn').addEventListener('click', () => {
+            this.downloadInventory();
+        });
+        
+        document.getElementById('download-transactions-btn').addEventListener('click', () => {
+            this.downloadTransactions();
+        });
     }
     
     switchSection(sectionName) {
@@ -936,6 +945,16 @@ class LibraryInventorySystem {
         
         container.addEventListener('click', remove);
         setTimeout(remove, 5000);
+    }
+    
+    downloadInventory() {
+        window.location.href = '/api/download_inventory';
+        this.showMessage('Downloading inventory CSV...', 'success');
+    }
+    
+    downloadTransactions() {
+        window.location.href = '/api/download_transactions';
+        this.showMessage('Downloading transactions CSV...', 'success');
     }
 }
 
