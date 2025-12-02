@@ -28,7 +28,7 @@ def init_csv_files():
     if not os.path.exists('books.csv'):
         with open('books.csv', 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(['barcode', 'name', 'price', 'details', 'date_added'])
+            writer.writerow(['barcode', 'name', 'price', 'details', 'date_added', 'quantity'])
     
     # Initialize transactions.csv if it doesn't exist - UPDATED with customer_name
     if not os.path.exists('transactions.csv'):
@@ -149,24 +149,33 @@ def get_book_by_barcode(barcode):
                         'name': row['name'],
                         'price': float(row['price']),
                         'details': row['details'],
-                        'date_added': row['date_added']
+                        'date_added': row['date_added'],
+                        'quantity': int(row.get('quantity', 1))
                     }
         return None
     except Exception as e:
         print(f"Error reading books CSV: {e}")
         return None
 
-def add_book_to_csv(barcode, name, price, details):
-    """Add new book to CSV"""
+def add_book_to_csv(barcode, name, price, details, quantity=1):
+    """Add new book to CSV or update quantity if exists"""
     try:
-        # Check if book already exists
-        if get_book_by_barcode(barcode):
-            return False, "Book with this barcode already exists"
+        existing_book = get_book_by_barcode(barcode)
         
-        with open('books.csv', 'a', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow([barcode, name, price, details, datetime.now().isoformat()])
-        return True, "Book added successfully"
+        if existing_book:
+            # Book exists, update quantity
+            new_quantity = existing_book['quantity'] + quantity
+            success = update_book_quantity(barcode, new_quantity)
+            if success:
+                return True, f"Book quantity updated. New quantity: {new_quantity}"
+            else:
+                return False, "Failed to update book quantity"
+        else:
+            # New book, add to CSV
+            with open('books.csv', 'a', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow([barcode, name, price, details, datetime.now().isoformat(), quantity])
+            return True, f"Book added successfully with quantity: {quantity}"
     except Exception as e:
         print(f"Error adding book: {e}")
         return False, f"Error: {e}"
@@ -183,11 +192,64 @@ def get_all_books():
                     'name': row['name'],
                     'price': float(row['price']),
                     'details': row['details'],
-                    'date_added': row['date_added']
+                    'date_added': row['date_added'],
+                    'quantity': int(row.get('quantity', 1))
                 })
     except Exception as e:
         print(f"Error reading books: {e}")
     return books
+
+def update_book_quantity(barcode, new_quantity):
+    """Update the quantity of a book in CSV"""
+    try:
+        books = []
+        updated = False
+        
+        # Read all books
+        with open('books.csv', 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            fieldnames = reader.fieldnames
+            for row in reader:
+                if row['barcode'] == barcode:
+                    row['quantity'] = str(new_quantity)
+                    updated = True
+                books.append(row)
+        
+        if not updated:
+            return False
+        
+        # Write back all books
+        with open('books.csv', 'w', newline='', encoding='utf-8') as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(books)
+        
+        return True
+    except Exception as e:
+        print(f"Error updating book quantity: {e}")
+        return False
+
+def reduce_book_quantity(barcode, quantity_to_reduce):
+    """Reduce the quantity of a book when billing"""
+    try:
+        book = get_book_by_barcode(barcode)
+        if not book:
+            return False, "Book not found"
+        
+        current_qty = book['quantity']
+        if current_qty < quantity_to_reduce:
+            return False, f"Insufficient quantity. Available: {current_qty}"
+        
+        new_quantity = current_qty - quantity_to_reduce
+        success = update_book_quantity(barcode, new_quantity)
+        
+        if success:
+            return True, f"Quantity reduced. Remaining: {new_quantity}"
+        else:
+            return False, "Failed to update quantity"
+    except Exception as e:
+        print(f"Error reducing quantity: {e}")
+        return False, f"Error: {e}"
 
 def save_transaction(items, total, customer_name, processed_by):
     """Save transaction to CSV with customer name"""
@@ -412,16 +474,20 @@ def books_api():
         name = data.get('name')
         price = data.get('price')
         details = data.get('details', '')
+        quantity = data.get('quantity', 1)
         
         if not all([barcode, name, price]):
             return jsonify({'error': 'Missing required fields'}), 400
         
         try:
             price = float(price)
+            quantity = int(quantity)
+            if quantity < 1:
+                return jsonify({'error': 'Quantity must be at least 1'}), 400
         except ValueError:
-            return jsonify({'error': 'Invalid price format'}), 400
+            return jsonify({'error': 'Invalid price or quantity format'}), 400
         
-        success, message = add_book_to_csv(barcode, name, price, details)
+        success, message = add_book_to_csv(barcode, name, price, details, quantity)
         
         if success:
             return jsonify({'success': True, 'message': message})
@@ -439,6 +505,93 @@ def get_book(barcode):
     else:
         return jsonify({'error': 'Book not found'}), 404
 
+@app.route('/api/update_book_quantity', methods=['POST'])
+def update_book_quantity_api():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        data = request.get_json()
+        barcode = data.get('barcode')
+        quantity = data.get('quantity')
+        
+        if not barcode or quantity is None:
+            return jsonify({'error': 'Missing barcode or quantity'}), 400
+        
+        try:
+            quantity = int(quantity)
+            if quantity < 0:
+                return jsonify({'error': 'Quantity cannot be negative'}), 400
+        except ValueError:
+            return jsonify({'error': 'Invalid quantity format'}), 400
+        
+        # Check if book exists
+        book = get_book_by_barcode(barcode)
+        if not book:
+            return jsonify({'error': 'Book not found'}), 404
+        
+        # Update quantity
+        success = update_book_quantity(barcode, quantity)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Quantity updated to {quantity}'
+            })
+        else:
+            return jsonify({'error': 'Failed to update quantity'}), 500
+            
+    except Exception as e:
+        print(f"Error updating quantity: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/delete_book', methods=['POST'])
+def delete_book_api():
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        data = request.get_json()
+        barcode = data.get('barcode')
+        
+        if not barcode:
+            return jsonify({'error': 'Missing barcode'}), 400
+        
+        # Check if book exists
+        book = get_book_by_barcode(barcode)
+        if not book:
+            return jsonify({'error': 'Book not found'}), 404
+        
+        # Delete book from CSV
+        books = []
+        deleted = False
+        
+        with open('books.csv', 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            fieldnames = reader.fieldnames
+            for row in reader:
+                if row['barcode'] != barcode:
+                    books.append(row)
+                else:
+                    deleted = True
+        
+        if deleted:
+            with open('books.csv', 'w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(books)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Book deleted successfully'
+            })
+        else:
+            return jsonify({'error': 'Failed to delete book'}), 500
+            
+    except Exception as e:
+        print(f"Error deleting book: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/process_bill', methods=['POST'])
 def process_bill():
     if 'user' not in session:
@@ -455,6 +608,22 @@ def process_bill():
         
         if not customer_name:
             return jsonify({'error': 'Customer name is required'}), 400
+        
+        # Reduce quantity for each item in the bill
+        insufficient_items = []
+        for item in items:
+            barcode = item.get('barcode')
+            quantity = item.get('quantity', 1)
+            
+            success, message = reduce_book_quantity(barcode, quantity)
+            if not success:
+                insufficient_items.append(f"{item.get('name')}: {message}")
+        
+        if insufficient_items:
+            return jsonify({
+                'error': 'Insufficient quantity for items',
+                'details': insufficient_items
+            }), 400
         
         success, transaction_id = save_transaction(items, total, customer_name, session['user'])
         
@@ -505,10 +674,12 @@ def stats():
     
     books = get_all_books()
     total_books = len(books)
-    total_value = sum(book['price'] for book in books)
+    total_quantity = sum(book['quantity'] for book in books)
+    total_value = sum(book['price'] * book['quantity'] for book in books)
     
     return jsonify({
         'total_books': total_books,
+        'total_quantity': total_quantity,
         'total_value': total_value
     })
 
