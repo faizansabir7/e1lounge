@@ -1074,6 +1074,48 @@
                 width: 100%;
             }
         }
+
+        /* Download Button Styles */
+        .btn-download {
+            background-color: #2c3e50;
+            color: white;
+            border: 1px solid #34495e;
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.3px;
+        }
+
+        .btn-download:hover {
+            background-color: #34495e;
+            border-color: #415b76;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn-download:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-container input {
+            flex: 1;
+            min-width: 200px;
+        }
     </style>
 </head>
 <body>
@@ -1120,6 +1162,9 @@
             <div class="search-container">
                 <input type="text" id="search-books" placeholder="Search by book name, barcode, or details...">
                 <button class="btn btn-secondary" id="clear-search">Clear</button>
+                <button class="btn-download" id="download-inventory-btn" title="Download Inventory CSV">
+                    Download CSV
+                </button>
             </div>
             <div class="table-wrapper">
                 <table class="inventory-table">
@@ -1201,6 +1246,13 @@
 
     <!-- Billing Section -->
     <div id="billing-section" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="margin: 0;">Billing & Transactions</h2>
+            <button class="btn-download" id="download-transactions-btn" title="Download Transactions CSV">
+            qDownload Transactions
+            </button>
+        </div>
+        
         <!-- Manual Barcode Entry -->
         <div class="form-container">
             <h3>Manual Barcode Entry</h3>
