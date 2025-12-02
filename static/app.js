@@ -57,6 +57,22 @@ class LibraryInventorySystem {
             this.stopScanner('bill');
         });
         
+        // Flashlight buttons
+        const flashBtnAdd = document.getElementById('flash-btn');
+        const flashBtnBill = document.getElementById('flash-btn-bill');
+        
+        if (flashBtnAdd) {
+            flashBtnAdd.addEventListener('click', () => {
+                this.toggleFlashlight('add');
+            });
+        }
+        
+        if (flashBtnBill) {
+            flashBtnBill.addEventListener('click', () => {
+                this.toggleFlashlight('bill');
+            });
+        }
+        
         // Manual Barcode Input for Billing
         const manualBarcodeInput = document.getElementById('manual-barcode-bill');
         const suggestionsList = document.getElementById('barcode-suggestions');
@@ -191,14 +207,15 @@ class LibraryInventorySystem {
         const startBtn = document.getElementById(`start-camera${scanType}`);
         const stopBtn = document.getElementById(`stop-camera${scanType}`);
         const resultDiv = document.getElementById(`scan-result${scanType}`);
+        const flashBtn = document.getElementById(`flash-btn${scanType}`);
         
         try {
-            // Request camera access (works for both mobile and desktop)
+            // Request camera access with advanced settings
             const constraints = {
                 video: {
                     facingMode: this.isMobileDevice ? 'environment' : 'user',
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
+                    width: { ideal: 1280 },  // Higher resolution for better zoom quality
+                    height: { ideal: 720 }
                 }
             };
             
@@ -210,16 +227,50 @@ class LibraryInventorySystem {
             startBtn.disabled = true;
             stopBtn.disabled = false;
             
-            resultDiv.style.display = 'block';
-            resultDiv.className = 'scan-result info';
-            resultDiv.textContent = '📹 Camera active! Point at barcode and hold steady...';
+            // Enable flashlight button if available
+            const track = stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+            
+            if (capabilities.torch) {
+                if (flashBtn) {
+                    flashBtn.style.display = 'inline-block';
+                    flashBtn.disabled = false;
+                }
+            }
             
             // Start continuous scanning
             this.scanningActive = true;
+            this.flashlightOn = false;
             
             // Wait for video to be ready
-            video.addEventListener('loadedmetadata', () => {
+            video.addEventListener('loadedmetadata', async () => {
                 console.log(`✅ Video ready: ${video.videoWidth}x${video.videoHeight}`);
+                
+                // Apply 2x zoom for better macro focusing
+                try {
+                    const capabilities = track.getCapabilities();
+                    if (capabilities.zoom) {
+                        const settings = track.getSettings();
+                        const maxZoom = capabilities.zoom.max;
+                        const minZoom = capabilities.zoom.min;
+                        const currentZoom = settings.zoom || minZoom;
+                        
+                        // Set to 2x zoom or max available (whichever is lower)
+                        const targetZoom = Math.min(2.0, maxZoom);
+                        
+                        await track.applyConstraints({
+                            advanced: [{ zoom: targetZoom }]
+                        });
+                        
+                        console.log(`✅ Zoom applied: ${targetZoom}x (Range: ${minZoom}-${maxZoom})`);
+                        resultDiv.textContent = `📹 Camera active with ${targetZoom}x zoom! Point at barcode...`;
+                    } else {
+                        console.log('⚠️ Zoom not supported on this device');
+                    }
+                } catch (zoomError) {
+                    console.warn('⚠️ Could not apply zoom:', zoomError);
+                }
+                
                 this.continuousScan(type, video, canvas, resultDiv);
             }, { once: true });
             
@@ -238,6 +289,39 @@ class LibraryInventorySystem {
             
             startBtn.disabled = false;
             stopBtn.disabled = true;
+            if (flashBtn) {
+                flashBtn.style.display = 'none';
+            }
+        }
+    }
+    
+    async toggleFlashlight(type) {
+        if (!this.currentStream) return;
+        
+        const track = this.currentStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        
+        if (!capabilities.torch) {
+            console.log('⚠️ Flashlight not supported on this device');
+            return;
+        }
+        
+        try {
+            this.flashlightOn = !this.flashlightOn;
+            await track.applyConstraints({
+                advanced: [{ torch: this.flashlightOn }]
+            });
+            
+            const scanType = type === 'add' ? '' : '-bill';
+            const flashBtn = document.getElementById(`flash-btn${scanType}`);
+            if (flashBtn) {
+                flashBtn.textContent = this.flashlightOn ? '🔦 Flash: ON' : '💡 Flash: OFF';
+                flashBtn.classList.toggle('flash-active', this.flashlightOn);
+            }
+            
+            console.log(`🔦 Flashlight ${this.flashlightOn ? 'ON' : 'OFF'}`);
+        } catch (error) {
+            console.error('❌ Flashlight toggle error:', error);
         }
     }
     
@@ -264,13 +348,14 @@ class LibraryInventorySystem {
             }
             
             try {
-                // Capture frame
+                // Capture frame exactly as displayed (with zoom applied)
+                // This ensures the zoomed-in view is what gets sent for decoding
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 
-                // Convert to base64
-                const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                // Convert to base64 with good quality for barcode recognition
+                const imageData = canvas.toDataURL('image/jpeg', 0.9);
                 
                 // Send to backend for processing
                 const response = await fetch('/api/scan_barcode', {
@@ -309,7 +394,7 @@ class LibraryInventorySystem {
         };
         
         // Start scanning
-        console.log('🎬 Starting continuous scan');
+        console.log('🎬 Starting continuous scan with zoom applied');
         scanFrame();
     }
     
@@ -318,13 +403,27 @@ class LibraryInventorySystem {
         const video = document.getElementById(`video${scanType}`);
         const startBtn = document.getElementById(`start-camera${scanType}`);
         const stopBtn = document.getElementById(`stop-camera${scanType}`);
+        const flashBtn = document.getElementById(`flash-btn${scanType}`);
         
         console.log('🛑 Stopping scanner');
         this.scanningActive = false;
+        this.flashlightOn = false;
         
         if (this.scanCheckInterval) {
             clearInterval(this.scanCheckInterval);
             this.scanCheckInterval = null;
+        }
+        
+        // Turn off flashlight before stopping
+        if (this.currentStream) {
+            const track = this.currentStream.getVideoTracks()[0];
+            try {
+                await track.applyConstraints({
+                    advanced: [{ torch: false }]
+                });
+            } catch (e) {
+                // Ignore errors when turning off torch
+            }
         }
         
         // Stop video stream
@@ -345,6 +444,14 @@ class LibraryInventorySystem {
         
         startBtn.disabled = false;
         stopBtn.disabled = true;
+        
+        // Hide and reset flashlight button
+        if (flashBtn) {
+            flashBtn.style.display = 'none';
+            flashBtn.disabled = true;
+            flashBtn.textContent = '💡 Flash: OFF';
+            flashBtn.classList.remove('flash-active');
+        }
     }
     
     handleScanResult(barcode, type) {
