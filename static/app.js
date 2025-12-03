@@ -46,6 +46,15 @@ class LibraryInventorySystem {
             window.location.href = '/logout';
         });
 
+        // Mobile logout button
+        const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = '/logout';
+            });
+        }
+
         // Navigation (Sidebar & Mobile)
         const navHandler = (e) => {
             const btn = e.currentTarget;
@@ -55,7 +64,7 @@ class LibraryInventorySystem {
             }
         };
 
-        document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(btn => {
+        document.querySelectorAll('.nav-item, .mobile-nav-item:not(.mobile-logout)').forEach(btn => {
             btn.addEventListener('click', navHandler);
         });
 

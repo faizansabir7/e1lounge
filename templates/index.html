@@ -184,8 +184,9 @@
                                 <h3 style="margin-bottom: 1rem;">Barcode Scanner</h3>
 
                                 <div id="scanner-add" class="scanner-wrapper hidden">
-                                    <video id="video-add" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px;"></video>
+                                    <video id="video-add" autoplay playsinline></video>
                                     <canvas id="canvas-add" style="display: none;"></canvas>
+                                    <div class="scanner-laser"></div>
                                 </div>
 
                                 <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
@@ -326,8 +327,9 @@
                                 <h3 style="margin-bottom: 1rem;">Add Items</h3>
 
                                 <div id="scanner-bill" class="scanner-wrapper hidden">
-                                    <video id="video-bill" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px;"></video>
+                                    <video id="video-bill" autoplay playsinline></video>
                                     <canvas id="canvas-bill" style="display: none;"></canvas>
+                                    <div class="scanner-laser"></div>
                                 </div>
 
                                 <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
@@ -425,6 +427,10 @@
                     <div class="mobile-nav-item" data-screen="billing">
                         <span class="material-icons-round mobile-nav-icon">receipt_long</span>
                         <span>Billing</span>
+                    </div>
+                    <div class="mobile-nav-item mobile-logout" id="mobile-logout-btn">
+                        <span class="material-icons-round mobile-nav-icon">logout</span>
+                        <span>Logout</span>
                     </div>
                 </div>
             </nav>
