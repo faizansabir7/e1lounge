@@ -1,1340 +1,440 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Library</title>
-    <style>
-        /* Reset and Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --background-color: #ecf0f1;
-            --card-background: #ffffff;
-            --text-primary: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --border-color: #bdc3c7;
-            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-primary);
-            line-height: 1.6;
-        }
-
-        /* Header */
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .logo {
-            height: 40px;
-            width: auto;
-            object-fit: contain;
-        }
-
-        header h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            margin: 0;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .user-info {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .logout-btn {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-
-        .logout-btn:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Navigation */
-        .main-nav {
-            display: flex;
-            background-color: var(--card-background);
-            border-bottom: 1px solid var(--border-color);
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .nav-btn {
-            flex: 1;
-            padding: 1rem 1.5rem;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            transition: all 0.2s ease;
-            border-bottom: 3px solid transparent;
-            white-space: nowrap;
-            min-width: 140px;
-        }
-
-        .nav-btn:hover {
-            color: var(--secondary-color);
-            background-color: rgba(52, 152, 219, 0.05);
-        }
-
-        .nav-btn.active {
-            color: var(--secondary-color);
-            border-bottom-color: var(--secondary-color);
-            background-color: rgba(52, 152, 219, 0.05);
-        }
-
-        /* Sections */
-        .section {
-            display: none;
-            padding: 1.5rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        /* Camera Container */
-        .camera-container {
-            background-color: var(--card-background);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-        }
-
-        .camera-container h3 {
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 0.5rem;
-        }
-
-        .video-wrapper {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        #video, #video-bill {
-            width: 100%;
-            height: auto;
-            max-height: 400px;
-            border-radius: 6px;
-            border: 2px solid var(--border-color);
-            background-color: #000;
-            object-fit: cover;
-        }
-
-        #canvas, #canvas-bill {
-            display: none;
-        }
-
-        .camera-controls {
-            text-align: center;
-            margin-top: 1rem;
-            display: flex;
-            justify-content: center;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .camera-btn {
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 0.625rem 1.25rem;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .camera-btn:hover:not(:disabled) {
-            background-color: #2980b9;
-            box-shadow: var(--shadow-hover);
-        }
-
-        .camera-btn:disabled {
-            background-color: var(--border-color);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .stop-btn {
-            background-color: var(--accent-color);
-        }
-
-        .stop-btn:hover:not(:disabled) {
-            background-color: #c0392b;
-        }
-
-        .scan-result {
-            margin-top: 1rem;
-            padding: 0.875rem;
-            border-radius: 4px;
-            text-align: center;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .scan-result.success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .scan-result.error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        /* Forms */
-        .form-container {
-            background-color: var(--card-background);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-        }
-
-        .form-container h3 {
-            margin-bottom: 1.25rem;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 0.5rem;
-        }
-
-        .input-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-        }
-
-        .input-group input,
-        .input-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        .input-group input:focus,
-        .input-group textarea:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 0.75rem 1.25rem;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex: 1;
-            min-width: 120px;
-        }
-
-        .btn-primary {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #2980b9;
-            box-shadow: var(--shadow-hover);
-        }
-
-        .btn-secondary {
-            background-color: var(--text-secondary);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #5a6c7d;
-        }
-
-        /* Stats Cards */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.25rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .stat-card {
-            background-color: var(--card-background);
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            border-left: 4px solid var(--secondary-color);
-            transition: all 0.2s ease;
-        }
-
-        .stat-card:hover {
-            box-shadow: var(--shadow-hover);
-            transform: translateY(-2px);
-        }
-
-        .stat-card h3 {
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-card .value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--secondary-color);
-        }
-
-        /* Inventory List - Table Format */
-        .inventory-container {
-            background-color: var(--card-background);
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-        }
-
-        .inventory-container h2 {
-            margin-bottom: 1.25rem;
-            color: var(--text-primary);
-            font-size: 1.35rem;
-            font-weight: 600;
-        }
-
-        .search-container {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .search-container input {
-            flex: 1;
-            min-width: 200px;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.95rem;
-        }
-
-        .search-container input:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .inventory-table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: white;
-            min-width: 600px;
-        }
-
-        .inventory-table thead {
-            background-color: #f8f9fa;
-        }
-
-        .inventory-table th {
-            padding: 1rem;
-            text-align: left;
-            font-weight: 600;
-            color: var(--text-primary);
-            border-bottom: 2px solid var(--border-color);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-        }
-
-        .inventory-table td {
-            padding: 1rem;
-            border-bottom: 1px solid #f1f3f4;
-            font-size: 0.9rem;
-        }
-
-        .inventory-table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .inventory-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* Billing - Professional Bill Structure */
-        .bill-container {
-            background-color: var(--card-background);
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .bill-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--primary-color);
-        }
-
-        .bill-header h3 {
-            color: var(--primary-color);
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-
-        .bill-header p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-bottom: 1.5rem;
-        }
-
-        .bill-table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: white;
-            min-width: 550px;
-        }
-
-        .bill-table thead {
-            background-color: #f8f9fa;
-        }
-
-        .bill-table th {
-            padding: 0.875rem;
-            text-align: left;
-            font-weight: 600;
-            color: var(--text-primary);
-            border-bottom: 2px solid var(--border-color);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .bill-table th:nth-child(2),
-        .bill-table th:nth-child(3),
-        .bill-table th:nth-child(4) {
-            text-align: right;
-        }
-
-        .bill-table th:nth-child(5) {
-            text-align: center;
-        }
-
-        .bill-table td {
-            padding: 1rem 0.875rem;
-            border-bottom: 1px solid #f1f3f4;
-            font-size: 0.9rem;
-            vertical-align: middle;
-        }
-
-        .bill-table td:nth-child(2),
-        .bill-table td:nth-child(4) {
-            text-align: right;
-        }
-
-        .bill-table td:nth-child(3) {
-            text-align: right;
-        }
-
-        .bill-table td:nth-child(5) {
-            text-align: center;
-        }
-
-        .bill-table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .bill-table tbody tr:last-child td {
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .item-name {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .quantity-controls {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            justify-content: flex-end;
-        }
-
-        .qty-display {
-            min-width: 30px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .qty-btn {
-            width: 28px;
-            height: 28px;
-            border: none;
-            border-radius: 4px;
-            background-color: var(--secondary-color);
-            color: white;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        .qty-btn:hover {
-            background-color: #2980b9;
-        }
-
-        .delete-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.5rem 0.875rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .delete-btn:hover {
-            background-color: #c0392b;
-        }
-
-        .bill-summary {
-            background-color: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 4px;
-            margin-bottom: 1.5rem;
-        }
-
-        .bill-summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            font-size: 0.95rem;
-        }
-
-        .bill-summary-row.total {
-            border-top: 2px solid var(--primary-color);
-            margin-top: 0.75rem;
-            padding-top: 1rem;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .bill-summary-row .label {
-            color: var(--text-secondary);
-        }
-
-        .bill-summary-row .value {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .bill-summary-row.total .value {
-            color: var(--primary-color);
-        }
-
-        .empty-bill {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* Messages */
-        .message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 4px;
-            color: white;
-            font-weight: 500;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-            max-width: 350px;
-            box-shadow: var(--shadow-hover);
-            font-size: 0.9rem;
-        }
-
-        .message.success {
-            background-color: var(--success-color);
-        }
-
-        .message.error {
-            background-color: var(--accent-color);
-        }
-
-        .message.info {
-            background-color: var(--secondary-color);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            header {
-                padding: 1rem;
-            }
-
-            .logo {
-                height: 32px;
-            }
-
-            header h1 {
-                font-size: 1.25rem;
-            }
-
-            .section {
-                padding: 1rem;
-            }
-
-            .camera-container,
-            .form-container,
-            .inventory-container,
-            .bill-container {
-                padding: 1.25rem;
-            }
-
-            #video, #video-bill {
-                width: 100%;
-                max-width: 100%;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .form-actions,
-            .camera-controls {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            .message {
-                right: 10px;
-                left: 10px;
-                max-width: none;
-            }
-
-            .bill-header h3 {
-                font-size: 1.25rem;
-            }
-
-            .bill-summary {
-                padding: 1rem;
-            }
-
-            .bill-summary-row.total {
-                font-size: 1.1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .nav-btn {
-                padding: 0.75rem 1rem;
-                font-size: 0.85rem;
-                min-width: 100px;
-            }
-
-            #video, #video-bill {
-                width: 100%;
-                max-width: 100%;
-            }
-
-            .camera-btn {
-                font-size: 0.85rem;
-                padding: 0.5rem 1rem;
-            }
-        }
-
-        /* Desktop larger video */
-        @media (min-width: 1024px) {
-            #video, #video-bill {
-                width: 100%;
-                max-width: 600px;
-            }
-        }
-
-        /* Flashlight button styles */
-        .flash-btn {
-            background-color: #f39c12;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.25rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: none;
-            margin-top: 0.5rem;
-        }
-
-        .flash-btn:hover:not(:disabled) {
-            background-color: #e67e22;
-            box-shadow: var(--shadow-hover);
-        }
-
-        .flash-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .flash-btn.flash-active {
-            background-color: #27ae60;
-        }
-
-        .flash-btn.flash-active:hover {
-            background-color: #229954;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            animation: fadeIn 0.2s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .modal-dialog {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from { 
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to { 
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            color: var(--primary-color);
-            font-size: 1.25rem;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-
-        .modal-close:hover {
-            background-color: #f0f0f0;
-            color: var(--text-primary);
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .existing-book-info {
-            background-color: #f8f9fa;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1.5rem;
-        }
-
-        .existing-book-info p {
-            margin: 0.5rem 0;
-            color: var(--text-primary);
-        }
-
-        .modal-actions-section h4 {
-            margin-top: 0;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        .quantity-update-section {
-            margin-top: 1rem;
-        }
-
-        .quantity-update-section label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        .quantity-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .quantity-input:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-        }
-
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-            margin-right: auto;
-        }
-
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-
-        .btn-secondary {
-            background-color: #95a5a6;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #7f8c8d;
-        }
-
-        .btn-primary {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #2980b9;
-        }
-
-        /* Existing Book Inline Form Styles */
-        .existing-book-container {
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .alert {
-            padding: 1rem 1.5rem;
-            border-radius: 6px;
-            margin-bottom: 1.5rem;
-            font-size: 1rem;
-        }
-
-        .alert-warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffc107;
-            color: #856404;
-        }
-
-        .existing-book-details {
-            background-color: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 6px;
-            margin-bottom: 1.5rem;
-        }
-
-        .existing-book-details h3 {
-            margin-top: 0;
-            margin-bottom: 1rem;
-            color: var(--primary-color);
-            font-size: 1.1rem;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .info-item.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .info-item label {
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-item span {
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        .quantity-badge {
-            display: inline-block;
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .update-section {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 6px;
-            border: 2px solid var(--secondary-color);
-        }
-
-        .update-section h3 {
-            margin-top: 0;
-            margin-bottom: 1rem;
-            color: var(--secondary-color);
-            font-size: 1.1rem;
-        }
-
-        @media (max-width: 600px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-actions {
-                flex-direction: column;
-            }
-
-            .form-actions button {
-                width: 100%;
-            }
-        }
-
-        /* Download Button Styles */
-        .btn-download {
-            background-color: #2c3e50;
-            color: white;
-            border: 1px solid #34495e;
-            padding: 0.6rem 1.2rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            letter-spacing: 0.3px;
-        }
-
-        .btn-download:hover {
-            background-color: #34495e;
-            border-color: #415b76;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-            transform: translateY(-1px);
-        }
-
-        .btn-download:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-container {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .search-container input {
-            flex: 1;
-            min-width: 200px;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Library Admin | E1 Lounge</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- Scripts -->
+    <script>
+        // Inject Flask variables
+        window.isAuthenticated = {{ 'true' if session.get('user') else 'false' }};
+        window.serverError = "{{ error if error else '' }}";
+        window.currentUser = "{{ session.get('user', '') }}";
+    </script>
 </head>
+
 <body>
-    <!-- Header -->
-    <header>
-        <div class="header-left">
-            <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo" class="logo">
-            <h1>Library</h1>
-        </div>
-        <div class="header-actions">
-            <span class="user-info">Administrator</span>
-            <a href="/logout" class="logout-btn">Sign Out</a>
-        </div>
-    </header>
+    <div class="app-container">
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
 
-    <!-- Navigation -->
-    <nav class="main-nav">
-        <button class="nav-btn active" data-section="inventory">Inventory Overview</button>
-        <button class="nav-btn" data-section="add-book">Add New Book</button>
-        <button class="nav-btn" data-section="billing">Point of Sale</button>
-    </nav>
+        <!-- Login Screen -->
+        <div id="login-screen" class="flex-center {% if session.get('user') %}hidden{% endif %}">
+            <div class="login-card">
+                <div class="login-logo">
+                    <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo" class="logo-img-lg">
+                </div>
+                <h1 class="login-title">Welcome Back</h1>
+                <p class="login-subtitle">Sign in to manage your library inventory</p>
 
-    <!-- Inventory Section -->
-    <div id="inventory-section" class="section active">
-        <!-- Stats -->
-        <div class="stats">
-            <div class="stat-card">
-                <h3>Total Books</h3>
-                <div class="value" id="total-books">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Total Quantity</h3>
-                <div class="value" id="total-quantity">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Total Value</h3>
-                <div class="value" id="total-value">₹0.00</div>
+                <form id="login-form" action="{{ url_for('login') }}" method="POST">
+                    <div class="form-group">
+                        <label class="form-label" style="text-align: left;">Username</label>
+                        <input type="text" name="username" id="username" class="form-input"
+                            placeholder="Enter your username" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="text-align: left;">Password</label>
+                        <input type="password" name="password" id="password" class="form-input" placeholder="••••••••"
+                            required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Sign In
+                        <span class="material-icons-round" style="font-size: 18px;">arrow_forward</span>
+                    </button>
+                </form>
             </div>
         </div>
 
-        <!-- Search -->
-        <div class="inventory-container">
-            <h2>Book Inventory</h2>
-            <div class="search-container">
-                <input type="text" id="search-books" placeholder="Search by book name, barcode, or details...">
-                <button class="btn btn-secondary" id="clear-search">Clear</button>
-                <button class="btn-download" id="download-inventory-btn" title="Download Inventory CSV">
-                    Download CSV
-                </button>
-            </div>
-            <div class="table-wrapper">
-                <table class="inventory-table">
-                    <thead>
-                        <tr>
-                            <th>Barcode</th>
-                            <th>Book Name</th>
-                            <th>Price (₹)</th>
-                            <th>Quantity</th>
-                            <th>Details</th>
-                            <th>Date Added</th>
-                        </tr>
-                    </thead>
-                    <tbody id="books-container">
-                        <!-- Books will be populated here dynamically via JavaScript -->
-                        <!-- Example structure for JavaScript to follow:
-                        <tr>
-                            <td>9789386905048</td>
-                            <td>Paavangal</td>
-                            <td>₹350.00</td>
-                            <td>N/A</td>
-                            <td>11/29/2025</td>
-                        </tr>
-                        -->
-                    </tbody>
-                </table>
-            </div>
+        <!-- Dashboard Screen -->
+        <div id="dashboard-screen" class="{% if not session.get('user') %}hidden{% endif %}">
+            <!-- Sidebar Navigation (Desktop) -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo-text">
+                        <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo"
+                            class="logo-img-sm">
+                        <span>E1 Library</span>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <button class="nav-item active" data-screen="inventory">
+                        <span class="material-icons-round nav-icon">inventory_2</span>
+                        <span>Inventory</span>
+                    </button>
+                    <button class="nav-item" data-screen="add-book">
+                        <span class="material-icons-round nav-icon">add_circle</span>
+                        <span>Add Book</span>
+                    </button>
+                    <button class="nav-item" data-screen="billing">
+                        <span class="material-icons-round nav-icon">receipt_long</span>
+                        <span>Billing</span>
+                    </button>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="user-profile">
+                        <div class="user-avatar">A</div>
+                        <div class="user-info">
+                            <h4 id="user-name-display">Admin</h4>
+                            <span>Administrator</span>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="logout-btn">
+                        <span class="material-icons-round">logout</span>
+                        <span>Sign Out</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+
+                <!-- Inventory Section -->
+                <section id="inventory-section" class="content-section active">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Inventory</h2>
+                            <p>Manage your book collection and stock</p>
+                        </div>
+                        <div class="search-box">
+                            <button class="btn btn-primary" onclick="library.downloadCSV('inventory')" style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-icons-round">download</span>
+                                Download CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <span class="material-icons-round">library_books</span>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Books</h3>
+                                <div class="value" id="total-books">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <span class="material-icons-round">payments</span>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Value</h3>
+                                <div class="value" id="total-value">₹0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card"
+                        style="background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <input type="text" id="search-books" class="form-input"
+                                placeholder="Search by name, barcode, or details...">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Barcode</th>
+                                        <th>Book Name</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                        <th>Details</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="books-container">
+                                    <!-- Books will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Add Book Section -->
+                <section id="add-book-section" class="content-section">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Add New Book</h2>
+                            <p>Scan barcode or enter details manually</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <!-- Scanner Column -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                <h3 style="margin-bottom: 1rem;">Barcode Scanner</h3>
+
+                                <div id="scanner-add" class="scanner-wrapper hidden">
+                                    <video id="video-add" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px;"></video>
+                                    <canvas id="canvas-add" style="display: none;"></canvas>
+                                </div>
+
+                                <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                                    <button id="start-scan-add" class="btn btn-primary" style="flex: 1;">
+                                        <span class="material-icons-round">qr_code_scanner</span>
+                                        Start Scan
+                                    </button>
+                                    <button id="stop-scan-add" class="btn btn-danger hidden" style="flex: 1;">
+                                        Stop
+                                    </button>
+                                </div>
+
+                                <button id="flash-btn-add" class="flash-btn" style="display: none; width: 100%; margin-bottom: 1rem;" disabled>
+                                    💡 Flash: OFF
+                                </button>
+
+                                <div class="form-group">
+                                    <label class="form-label">Manual Entry</label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="manual-barcode-add" class="form-input"
+                                            placeholder="Enter barcode">
+                                        <button id="use-manual-add" class="btn btn-secondary">Use</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Column -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                <h3 style="margin-bottom: 1.5rem;">Book Details</h3>
+                                
+                                <!-- Update Quantity Mode (Hidden by default) -->
+                                <div id="update-quantity-mode" style="display: none;">
+                                    <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;">
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
+                                            <span class="material-icons-round" style="color: #3b82f6; font-size: 32px;">info</span>
+                                            <div>
+                                                <h4 style="margin: 0; color: #1e40af;">Book Already Exists</h4>
+                                                <p style="margin: 0; color: #64748b; font-size: 0.9rem;">Update the quantity below</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                                            <div style="display: grid; gap: 0.5rem;">
+                                                <div style="display: flex; justify-content: space-between;">
+                                                    <span style="color: #64748b;">Barcode:</span>
+                                                    <span id="existing-barcode" style="font-family: monospace; font-weight: 600;"></span>
+                                                </div>
+                                                <div style="display: flex; justify-content: space-between;">
+                                                    <span style="color: #64748b;">Book Name:</span>
+                                                    <span id="existing-name" style="font-weight: 600;"></span>
+                                                </div>
+                                                <div style="display: flex; justify-content: space-between;">
+                                                    <span style="color: #64748b;">Current Quantity:</span>
+                                                    <span id="existing-quantity" style="font-weight: 600; color: #3b82f6;"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label class="form-label">Quantity to Add</label>
+                                            <input type="number" id="quantity-to-add" class="form-input" value="1" min="1" required>
+                                        </div>
+                                        
+                                        <div style="background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                <span style="font-weight: 600;">New Total:</span>
+                                                <span id="new-total-quantity" style="font-size: 1.5rem; font-weight: 700; color: #10b981;"></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div style="display: flex; gap: 1rem;">
+                                            <button type="button" id="update-quantity-btn" class="btn btn-primary" style="flex: 1;">
+                                                Update Quantity
+                                            </button>
+                                            <button type="button" id="cancel-update-btn" class="btn btn-secondary">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Normal Add Book Form -->
+                                <form id="add-book-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Barcode</label>
+                                        <input type="text" id="book-barcode" class="form-input" readonly
+                                            style="background-color: #f1f5f9;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Book Name</label>
+                                        <input type="text" id="book-name" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Price (₹)</label>
+                                        <input type="number" id="book-price" class="form-input" step="0.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Quantity</label>
+                                        <input type="number" id="book-quantity" class="form-input" value="1" min="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Additional Details</label>
+                                        <textarea id="book-details" class="form-textarea" rows="3"></textarea>
+                                    </div>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <button type="submit" class="btn btn-primary" style="flex: 1;">Add Book</button>
+                                        <button type="button" id="clear-form" class="btn btn-secondary">Clear</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Billing Section -->
+                <section id="billing-section" class="content-section">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Billing</h2>
+                            <p>Process transactions and checkout</p>
+                        </div>
+                        <div class="search-box">
+                            <button class="btn btn-primary" onclick="library.downloadCSV('transactions')" style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-icons-round">download</span>
+                                Export Transactions
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <!-- Scanner & Input -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+                                <h3 style="margin-bottom: 1rem;">Add Items</h3>
+
+                                <div id="scanner-bill" class="scanner-wrapper hidden">
+                                    <video id="video-bill" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px;"></video>
+                                    <canvas id="canvas-bill" style="display: none;"></canvas>
+                                </div>
+
+                                <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                                    <button id="start-scan-bill" class="btn btn-primary" style="flex: 1;">
+                                        <span class="material-icons-round">qr_code_scanner</span>
+                                        Scan Item
+                                    </button>
+                                    <button id="stop-scan-bill" class="btn btn-danger hidden" style="flex: 1;">
+                                        Stop
+                                    </button>
+                                </div>
+
+                                <button id="flash-btn-bill" class="flash-btn" style="display: none; width: 100%; margin-bottom: 1rem;" disabled>
+                                    💡 Flash: OFF
+                                </button>
+
+                                <div class="form-group">
+                                    <label class="form-label">Manual Entry / Search</label>
+                                    <div style="display: flex; gap: 10px; position: relative;">
+                                        <input type="text" id="manual-barcode-bill" class="form-input"
+                                            placeholder="Enter or search barcode" autocomplete="off">
+                                        <button id="use-manual-bill" class="btn btn-secondary">Add</button>
+                                    </div>
+                                    <div id="barcode-suggestions" class="suggestions-list"></div>
+                                    <small style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; display: block;">
+                                        Search by barcode or name to find and add items to bill
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bill Summary -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; height: 100%;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                    <h3>Current Bill</h3>
+                                    <button id="clear-bill" class="btn btn-secondary"
+                                        style="padding: 0.5rem 1rem; font-size: 0.85rem;">Clear All</button>
+                                </div>
+
+                                <div class="table-container"
+                                    style="margin-bottom: 1.5rem; max-height: 400px; overflow-y: auto;">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Qty</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bill-items">
+                                            <!-- Bill items populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div
+                                    style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin-top: auto;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                                        <span>Subtotal</span>
+                                        <span id="bill-subtotal">₹0.00</span>
+                                    </div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.5rem; font-weight: 700; color: var(--text-main);">
+                                        <span>Total</span>
+                                        <span id="bill-total">₹0.00</span>
+                                    </div>
+                                    <button id="process-bill" class="btn btn-primary btn-block" style="padding: 1rem;">
+                                        Process Payment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Mobile Navigation (Bottom) -->
+            <nav class="mobile-nav">
+                <div class="mobile-nav-items">
+                    <div class="mobile-nav-item active" data-screen="inventory">
+                        <span class="material-icons-round mobile-nav-icon">inventory_2</span>
+                        <span>Inventory</span>
+                    </div>
+                    <div class="mobile-nav-item" data-screen="add-book">
+                        <span class="material-icons-round mobile-nav-icon">add_circle</span>
+                        <span>Add</span>
+                    </div>
+                    <div class="mobile-nav-item" data-screen="billing">
+                        <span class="material-icons-round mobile-nav-icon">receipt_long</span>
+                        <span>Billing</span>
+                    </div>
+                </div>
+            </nav>
         </div>
     </div>
 
-    <!-- Add Book Section -->
-    <div id="add-book-section" class="section">
-        <!-- Camera Scanning -->
-        <div class="camera-container">
-            <h3>Barcode Scanner</h3>
-            <div class="video-wrapper">
-                <video id="video" autoplay muted playsinline style="display: none;"></video>
-            </div>
-            <canvas id="canvas" style="display: none;"></canvas>
-            <div class="camera-controls">
-                <button class="camera-btn" id="start-camera">Start Scanner</button>
-                <button class="camera-btn stop-btn" id="stop-camera" disabled>Stop Scanner</button>
-                <button class="flash-btn" id="flash-btn" disabled>💡 Flash: OFF</button>
-            </div>
-            <div id="scan-result" class="scan-result" style="display: none;"></div>
-        </div>
-
-        <!-- Add Book Form -->
-        <div class="form-container">
-            <h3>Add New Book</h3>
-            <form id="add-book-form">
-                <div class="input-group">
-                    <label for="book-barcode">Barcode *</label>
-                    <input type="text" id="book-barcode" placeholder="Enter or scan barcode" required>
-                </div>
-                <div class="input-group">
-                    <label for="book-name">Book Name *</label>
-                    <input type="text" id="book-name" placeholder="Enter book title" required>
-                </div>
-                <div class="input-group">
-                    <label for="book-price">Price (₹) *</label>
-                    <input type="number" id="book-price" step="0.01" placeholder="0.00" required>
-                </div>
-                <div class="input-group">
-                    <label for="book-quantity">Quantity *</label>
-                    <input type="number" id="book-quantity" min="1" value="1" placeholder="1" required>
-                </div>
-                <div class="input-group">
-                    <label for="book-details">Additional Details</label>
-                    <textarea id="book-details" rows="4" placeholder="Author, publisher, edition, etc."></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Add Book to Inventory</button>
-                    <button type="button" class="btn btn-secondary" id="clear-form">Clear Form</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Billing Section -->
-    <div id="billing-section" class="section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h2 style="margin: 0;">Billing & Transactions</h2>
-            <button class="btn-download" id="download-transactions-btn" title="Download Transactions CSV">
-            Download Transactions
-            </button>
-        </div>
-        
-        <!-- Manual Barcode Entry -->
-        <div class="form-container">
-            <h3>Manual Barcode Entry</h3>
-            <div class="input-group" style="position: relative;">
-                <label for="manual-barcode-bill">Enter Barcode or Book Name</label>
-                <input 
-                    type="text" 
-                    id="manual-barcode-bill" 
-                    placeholder="Type barcode or search by book name..."
-                    autocomplete="off"
-                >
-                <div id="barcode-suggestions" class="suggestions-dropdown"></div>
-            </div>
-            <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 0.5rem;">
-                💡 Press Enter to add, or select from suggestions
-            </p>
-        </div>
-
-        <!-- Camera for Billing -->
-        <div class="camera-container">
-            <h3>Barcode Scanner</h3>
-            <div class="video-wrapper">
-                <video id="video-bill" autoplay muted playsinline style="display: none;"></video>
-            </div>
-            <canvas id="canvas-bill" style="display: none;"></canvas>
-            <div class="camera-controls">
-                <button class="camera-btn" id="start-camera-bill">Start Scanner</button>
-                <button class="camera-btn stop-btn" id="stop-camera-bill" disabled>Stop Scanner</button>
-                <button class="flash-btn" id="flash-btn-bill" disabled>💡 Flash: OFF</button>
-            </div>
-            <div id="scan-result-bill" class="scan-result" style="display: none;"></div>
-        </div>
-
-        <!-- Current Bill -->
-        <div class="bill-container">
-            <div class="bill-header">
-                <h3>SALES INVOICE</h3>
-                <p>Transaction Bill</p>
-            </div>
-
-            <!-- Customer Name Input -->
-            <div class="input-group" style="margin-bottom: 1.5rem;">
-                <label for="customer-name">Customer Name *</label>
-                <input 
-                    type="text" 
-                    id="customer-name" 
-                    placeholder="Enter customer name"
-                    required
-                >
-            </div>
-            
-            <div class="table-wrapper">
-                <table class="bill-table">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Price</th>
-                            <th>Qty</th>
-                            <th>Amount</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bill-items">
-                        <!-- Bill items will be populated here -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="bill-summary">
-                <div class="bill-summary-row total">
-                    <span class="label">Total Amount:</span>
-                    <span class="value">₹ <span id="bill-total">0.00</span></span>
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button class="btn btn-secondary" id="clear-bill">Clear Transaction</button>
-                <button class="btn btn-primary" id="process-bill">Process Payment</button>
-            </div>
-        </div>
-    </div>
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
+
 </html>

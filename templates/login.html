@@ -1,228 +1,359 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E1 Library - Login</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Library Admin | E1 Lounge</title>
 
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --text-primary: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --border-color: #bdc3c7;
-            --error-color: #e74c3c;
-            --info-bg: #e8f4f8;
-            --info-text: #2980b9;
-        }
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background-color: #ecf0f1;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--text-primary);
-            line-height: 1.6;
-            padding: 20px;
-        }
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
-        /* Subtle background pattern */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(44, 62, 80, 0.05) 0%, rgba(52, 152, 219, 0.05) 100%);
-            z-index: -1;
-        }
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
-        .login-container {
-            background: white;
-            padding: 3rem 2.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
-            width: 100%;
-            max-width: 420px;
-            border-top: 4px solid var(--secondary-color);
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .login-logo {
-            width: 100px;
-            height: auto;
-            margin: 0 auto 1rem;
-            display: block;
-            object-fit: contain;
-        }
-
-        .login-header h1 {
-            color: var(--primary-color);
-            font-size: 1.75rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.5px;
-        }
-
-        .login-header p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .error {
-            background-color: #fee;
-            color: var(--error-color);
-            padding: 0.875rem 1rem;
-            border-radius: 4px;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            font-size: 0.9rem;
-            border: 1px solid #fcc;
-        }
-
-        form {
-            margin-bottom: 1.5rem;
-        }
-
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 0.875rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            background-color: white;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .input-group input::placeholder {
-            color: #bdc3c7;
-        }
-
-        button[type="submit"] {
-            width: 100%;
-            padding: 0.875rem 1.5rem;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background-color: var(--secondary-color);
-            color: white;
-            margin-top: 0.5rem;
-        }
-
-        button[type="submit"]:hover {
-            background-color: #2980b9;
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.25);
-        }
-
-        button[type="submit"]:active {
-            transform: translateY(1px);
-        }
-
-        .demo-info {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: var(--info-bg);
-            border-radius: 4px;
-            text-align: center;
-            font-size: 0.85rem;
-            color: var(--info-text);
-            border: 1px solid #d4e9f2;
-        }
-
-        .demo-info strong {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .footer-text {
-            text-align: center;
-            margin-top: 1.5rem;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 2rem 1.5rem;
-            }
-
-            .login-logo {
-                width: 60px;
-            }
-
-            .login-header h1 {
-                font-size: 1.5rem;
-            }
-
-            .login-header p {
-                font-size: 0.875rem;
-            }
-        }
-    </style>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script>
+        // Inject Flask variables
+        window.isAuthenticated = {{ 'true' if session.get('user') else 'false' }};
+        window.serverError = "{{ error if error else '' }}";
+        window.currentUser = "{{ session.get('user', '') }}";
+    </script>
 </head>
+
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo" class="login-logo">
-            <p>Administrator Access</p>
+    <div class="app-container">
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Login Screen -->
+        <div id="login-screen" class="flex-center {% if session.get('user') %}hidden{% endif %}">
+            <div class="login-card">
+                <div class="login-logo">
+                    <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo" class="logo-img-lg">
+                </div>
+                <h1 class="login-title">Welcome Back</h1>
+                <p class="login-subtitle">Sign in to manage your library inventory</p>
+
+                <form id="login-form" action="{{ url_for('login') }}" method="POST">
+                    <div class="form-group">
+                        <label class="form-label" style="text-align: left;">Username</label>
+                        <input type="text" name="username" id="username" class="form-input"
+                            placeholder="Enter your username" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="text-align: left;">Password</label>
+                        <input type="password" name="password" id="password" class="form-input" placeholder="••••••••"
+                            required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Sign In
+                        <span class="material-icons-round" style="font-size: 18px;">arrow_forward</span>
+                    </button>
+                </form>
+            </div>
         </div>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
+        <!-- Dashboard Screen -->
+        <div id="dashboard-screen" class="{% if not session.get('user') %}hidden{% endif %}">
+            <!-- Sidebar Navigation (Desktop) -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo-text">
+                        <img src="{{ url_for('static', filename='EdifisLogo.png') }}" alt="Edifis Logo"
+                            class="logo-img-sm">
+                        <span>E1 Library</span>
+                    </div>
+                </div>
 
-        <form method="POST">
-            <div class="input-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
-            </div>
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
-            </div>
-            <button type="submit">Sign In</button>
-        </form>
+                <nav class="sidebar-nav">
+                    <button class="nav-item active" data-screen="inventory">
+                        <span class="material-icons-round nav-icon">inventory_2</span>
+                        <span>Inventory</span>
+                    </button>
+                    <button class="nav-item" data-screen="add-book">
+                        <span class="material-icons-round nav-icon">add_circle</span>
+                        <span>Add Book</span>
+                    </button>
+                    <button class="nav-item" data-screen="billing">
+                        <span class="material-icons-round nav-icon">receipt_long</span>
+                        <span>Billing</span>
+                    </button>
+                </nav>
 
-        <div class="footer-text">
-            © 2025 E1 Library
+                <div class="sidebar-footer">
+                    <div class="user-profile">
+                        <div class="user-avatar">A</div>
+                        <div class="user-info">
+                            <h4 id="user-name-display">Admin</h4>
+                            <span>Administrator</span>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="logout-btn">
+                        <span class="material-icons-round">logout</span>
+                        <span>Sign Out</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+
+                <!-- Inventory Section -->
+                <section id="inventory-section" class="content-section active">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Inventory</h2>
+                            <p>Manage your book collection and stock</p>
+                        </div>
+                        <div class="search-box">
+                            <!-- Search input could go here -->
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <span class="material-icons-round">library_books</span>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Books</h3>
+                                <div class="value" id="total-books">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <span class="material-icons-round">payments</span>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Value</h3>
+                                <div class="value" id="total-value">₹0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card"
+                        style="background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <input type="text" id="search-books" class="form-input"
+                                placeholder="Search by name, barcode, or details...">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Barcode</th>
+                                        <th>Book Name</th>
+                                        <th>Price</th>
+                                        <th>Details</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="books-container">
+                                    <!-- Books will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Add Book Section -->
+                <section id="add-book-section" class="content-section">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Add New Book</h2>
+                            <p>Scan barcode or enter details manually</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <!-- Scanner Column -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                <h3 style="margin-bottom: 1rem;">Barcode Scanner</h3>
+
+                                <div id="scanner-add" class="scanner-wrapper hidden">
+                                    <div class="scanner-overlay"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+
+                                <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                                    <button id="start-scan-add" class="btn btn-primary" style="flex: 1;">
+                                        <span class="material-icons-round">qr_code_scanner</span>
+                                        Start Scan
+                                    </button>
+                                    <button id="stop-scan-add" class="btn btn-danger hidden" style="flex: 1;">
+                                        Stop
+                                    </button>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Manual Entry</label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="manual-barcode-add" class="form-input"
+                                            placeholder="Enter barcode">
+                                        <button id="use-manual-add" class="btn btn-secondary">Use</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Column -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                <h3 style="margin-bottom: 1.5rem;">Book Details</h3>
+                                <form id="add-book-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Barcode</label>
+                                        <input type="text" id="book-barcode" class="form-input" readonly
+                                            style="background-color: #f1f5f9;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Book Name</label>
+                                        <input type="text" id="book-name" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Price (₹)</label>
+                                        <input type="number" id="book-price" class="form-input" step="0.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Additional Details</label>
+                                        <textarea id="book-details" class="form-textarea" rows="3"></textarea>
+                                    </div>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <button type="submit" class="btn btn-primary" style="flex: 1;">Add Book</button>
+                                        <button type="button" id="clear-form" class="btn btn-secondary">Clear</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Billing Section -->
+                <section id="billing-section" class="content-section">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Billing</h2>
+                            <p>Process transactions and checkout</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <!-- Scanner & Input -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+                                <h3 style="margin-bottom: 1rem;">Add Items</h3>
+
+                                <div id="scanner-bill" class="scanner-wrapper hidden">
+                                    <div class="scanner-overlay"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+
+                                <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                                    <button id="start-scan-bill" class="btn btn-primary" style="flex: 1;">
+                                        <span class="material-icons-round">qr_code_scanner</span>
+                                        Scan Item
+                                    </button>
+                                    <button id="stop-scan-bill" class="btn btn-danger hidden" style="flex: 1;">
+                                        Stop
+                                    </button>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Manual Entry</label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="manual-barcode-bill" class="form-input"
+                                            placeholder="Enter barcode">
+                                        <button id="use-manual-bill" class="btn btn-secondary">Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bill Summary -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; height: 100%;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                    <h3>Current Bill</h3>
+                                    <button id="clear-bill" class="btn btn-secondary"
+                                        style="padding: 0.5rem 1rem; font-size: 0.85rem;">Clear All</button>
+                                </div>
+
+                                <div class="table-container"
+                                    style="margin-bottom: 1.5rem; max-height: 400px; overflow-y: auto;">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Qty</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bill-items">
+                                            <!-- Bill items populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div
+                                    style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin-top: auto;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                                        <span>Subtotal</span>
+                                        <span id="bill-subtotal">₹0.00</span>
+                                    </div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.5rem; font-weight: 700; color: var(--text-main);">
+                                        <span>Total</span>
+                                        <span id="bill-total">₹0.00</span>
+                                    </div>
+                                    <button id="process-bill" class="btn btn-primary btn-block" style="padding: 1rem;">
+                                        Process Payment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Mobile Navigation (Bottom) -->
+            <nav class="mobile-nav">
+                <div class="mobile-nav-items">
+                    <div class="mobile-nav-item active" data-screen="inventory">
+                        <span class="material-icons-round mobile-nav-icon">inventory_2</span>
+                        <span>Inventory</span>
+                    </div>
+                    <div class="mobile-nav-item" data-screen="add-book">
+                        <span class="material-icons-round mobile-nav-icon">add_circle</span>
+                        <span>Add</span>
+                    </div>
+                    <div class="mobile-nav-item" data-screen="billing">
+                        <span class="material-icons-round mobile-nav-icon">receipt_long</span>
+                        <span>Billing</span>
+                    </div>
+                </div>
+            </nav>
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
+
 </html>

@@ -1,186 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Library Inventory System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Library Admin | E1 Lounge</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
+
 <body>
     <div class="app-container">
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+
         <!-- Login Screen -->
-        <div id="login-screen" class="screen">
-            <div class="login-container">
-                <h1>Library Admin Portal</h1>
+        <div id="login-screen" class="flex-center">
+            <div class="login-card">
+                <div class="login-logo">
+                    <img src="static/EdifisLogo.png" alt="Edifis Logo" class="logo-img-lg">
+                </div>
+                <h1 class="login-title">Welcome Back</h1>
+                <p class="login-subtitle">Sign in to manage your library inventory</p>
+
                 <form id="login-form">
-                    <div class="input-group">
-                        <label for="username">Username:</label>
-                        <input type="text" id="username" required>
+                    <div class="form-group">
+                        <label class="form-label" style="text-align: left;">Username</label>
+                        <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
                     </div>
-                    <div class="input-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" required>
+                    <div class="form-group">
+                        <label class="form-label" style="text-align: left;">Password</label>
+                        <input type="password" id="password" class="form-input" placeholder="••••••••" required>
                     </div>
-                    <button type="submit">Login</button>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Sign In
+                        <span class="material-icons-round" style="font-size: 18px;">arrow_forward</span>
+                    </button>
                 </form>
             </div>
         </div>
 
-        <!-- Main Dashboard -->
-        <div id="dashboard-screen" class="screen hidden">
-            <header>
-                <h1>Library Inventory</h1>
-                <div class="header-actions">
-                    <span id="welcome-text"></span>
-                    <button id="logout-btn" class="logout-btn">Logout</button>
+        <!-- Dashboard Screen -->
+        <div id="dashboard-screen" class="hidden">
+            <!-- Sidebar Navigation (Desktop) -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo-text">
+                        <img src="static/EdifisLogo.png" alt="Edifis Logo" class="logo-img-sm">
+                        <span>E1 Library</span>
+                    </div>
                 </div>
-            </header>
 
-            <nav class="main-nav">
-                <button class="nav-btn active" data-screen="inventory">Inventory</button>
-                <button class="nav-btn" data-screen="add-book">Add Book</button>
-                <button class="nav-btn" data-screen="billing">Billing</button>
+                <nav class="sidebar-nav">
+                    <button class="nav-item active" data-screen="inventory">
+                        <span class="material-icons-round nav-icon">inventory_2</span>
+                        <span>Inventory</span>
+                    </button>
+                    <button class="nav-item" data-screen="add-book">
+                        <span class="material-icons-round nav-icon">add_circle</span>
+                        <span>Add Book</span>
+                    </button>
+                    <button class="nav-item" data-screen="billing">
+                        <span class="material-icons-round nav-icon">receipt_long</span>
+                        <span>Billing</span>
+                    </button>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="user-profile">
+                        <div class="user-avatar">A</div>
+                        <div class="user-info">
+                            <h4 id="user-name-display">Admin</h4>
+                            <span>Administrator</span>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="logout-btn">
+                        <span class="material-icons-round">logout</span>
+                        <span>Sign Out</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+
+                <!-- Inventory Section -->
+                <section id="inventory-section" class="content-section active">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Inventory</h2>
+                            <p>Manage your book collection and stock</p>
+                        </div>
+                        <div class="search-box">
+                            <!-- Search input could go here -->
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <span class="material-icons-round">library_books</span>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Books</h3>
+                                <div class="value" id="total-books">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <span class="material-icons-round">payments</span>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Total Value</h3>
+                                <div class="value" id="total-value">₹0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card"
+                        style="background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <input type="text" id="search-books" class="form-input"
+                                placeholder="Search by name, barcode, or details...">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Barcode</th>
+                                        <th>Book Name</th>
+                                        <th>Price</th>
+                                        <th>Details</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="books-container">
+                                    <!-- Books will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Add Book Section -->
+                <section id="add-book-section" class="content-section">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Add New Book</h2>
+                            <p>Scan barcode or enter details manually</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <!-- Scanner Column -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                <h3 style="margin-bottom: 1rem;">Barcode Scanner</h3>
+
+                                <div id="scanner-add" class="scanner-wrapper hidden">
+                                    <div class="scanner-overlay"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+
+                                <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                                    <button id="start-scan-add" class="btn btn-primary" style="flex: 1;">
+                                        <span class="material-icons-round">qr_code_scanner</span>
+                                        Start Scan
+                                    </button>
+                                    <button id="stop-scan-add" class="btn btn-danger hidden" style="flex: 1;">
+                                        Stop
+                                    </button>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Manual Entry</label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="manual-barcode-add" class="form-input"
+                                            placeholder="Enter barcode">
+                                        <button id="use-manual-add" class="btn btn-secondary">Use</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Column -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                                <h3 style="margin-bottom: 1.5rem;">Book Details</h3>
+                                <form id="add-book-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Barcode</label>
+                                        <input type="text" id="book-barcode" class="form-input" readonly
+                                            style="background-color: #f1f5f9;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Book Name</label>
+                                        <input type="text" id="book-name" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Price (₹)</label>
+                                        <input type="number" id="book-price" class="form-input" step="0.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Additional Details</label>
+                                        <textarea id="book-details" class="form-textarea" rows="3"></textarea>
+                                    </div>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <button type="submit" class="btn btn-primary" style="flex: 1;">Add Book</button>
+                                        <button type="button" id="clear-form" class="btn btn-secondary">Clear</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Billing Section -->
+                <section id="billing-section" class="content-section">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h2>Billing</h2>
+                            <p>Process transactions and checkout</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <!-- Scanner & Input -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+                                <h3 style="margin-bottom: 1rem;">Add Items</h3>
+
+                                <div id="scanner-bill" class="scanner-wrapper hidden">
+                                    <div class="scanner-overlay"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+
+                                <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                                    <button id="start-scan-bill" class="btn btn-primary" style="flex: 1;">
+                                        <span class="material-icons-round">qr_code_scanner</span>
+                                        Scan Item
+                                    </button>
+                                    <button id="stop-scan-bill" class="btn btn-danger hidden" style="flex: 1;">
+                                        Stop
+                                    </button>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Manual Entry</label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="manual-barcode-bill" class="form-input"
+                                            placeholder="Enter barcode">
+                                        <button id="use-manual-bill" class="btn btn-secondary">Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bill Summary -->
+                        <div>
+                            <div class="card"
+                                style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; height: 100%;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                    <h3>Current Bill</h3>
+                                    <button id="clear-bill" class="btn btn-secondary"
+                                        style="padding: 0.5rem 1rem; font-size: 0.85rem;">Clear All</button>
+                                </div>
+
+                                <div class="table-container"
+                                    style="margin-bottom: 1.5rem; max-height: 400px; overflow-y: auto;">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Qty</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bill-items">
+                                            <!-- Bill items populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div
+                                    style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin-top: auto;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                                        <span>Subtotal</span>
+                                        <span id="bill-subtotal">₹0.00</span>
+                                    </div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.5rem; font-weight: 700; color: var(--text-main);">
+                                        <span>Total</span>
+                                        <span id="bill-total">₹0.00</span>
+                                    </div>
+                                    <button id="process-bill" class="btn btn-primary btn-block" style="padding: 1rem;">
+                                        Process Payment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Mobile Navigation (Bottom) -->
+            <nav class="mobile-nav">
+                <div class="mobile-nav-items">
+                    <div class="mobile-nav-item active" data-screen="inventory">
+                        <span class="material-icons-round mobile-nav-icon">inventory_2</span>
+                        <span>Inventory</span>
+                    </div>
+                    <div class="mobile-nav-item" data-screen="add-book">
+                        <span class="material-icons-round mobile-nav-icon">add_circle</span>
+                        <span>Add</span>
+                    </div>
+                    <div class="mobile-nav-item" data-screen="billing">
+                        <span class="material-icons-round mobile-nav-icon">receipt_long</span>
+                        <span>Billing</span>
+                    </div>
+                </div>
             </nav>
-
-            <!-- Inventory Management -->
-            <div id="inventory-section" class="section active">
-                <div class="search-container">
-                    <input type="text" id="search-books" placeholder="Search books...">
-                    <button id="clear-search">Clear</button>
-                </div>
-                <div class="stats">
-                    <div class="stat-card">
-                        <h3>Total Books</h3>
-                        <span id="total-books">0</span>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Total Value</h3>
-                        <span id="total-value">Rs 0.00</span>
-                    </div>
-                </div>
-                <div class="inventory-list">
-                    <div class="list-header">
-                        <span>Barcode</span>
-                        <span>Book Name</span>
-                        <span>Price</span>
-                        <span>Actions</span>
-                    </div>
-                    <div id="books-list"></div>
-                </div>
-            </div>
-
-            <!-- Add Book Section -->
-            <div id="add-book-section" class="section">
-                <h2>Add New Book</h2>
-                <div class="scan-container">
-                    <div class="camera-info">
-                        <p><strong>📱 Mobile Users:</strong> Make sure to allow camera access when prompted!</p>
-                        <button id="test-camera-add" class="test-camera-btn">Test Camera Access</button>
-                    </div>
-                    <button id="start-scan-add" class="scan-btn">📷 Scan Barcode</button>
-                    <div id="scanner-add" class="scanner-container"></div>
-                    <button id="stop-scan-add" class="scan-btn hidden"> Stop Scanning</button>
-                    <div class="scan-help">
-                        <p><strong>Scanning Tips:</strong></p>
-                        <ul>
-                            <li>Hold device steady and keep QR/barcode centered</li>
-                            <li>Ensure good lighting</li>
-                            <li>Try moving closer or farther from the code</li>
-                            <li>Make sure the code is clear and not damaged</li>
-                        </ul>
-                        <div class="manual-input">
-                            <p>Or enter barcode manually:</p>
-                            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                                <input type="text" id="manual-barcode-add" placeholder="Enter barcode manually" style="flex: 1;">
-                                <button id="use-manual-add" class="scan-btn" style="padding: 8px 16px;">Use This Code</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <form id="add-book-form">
-                    <div class="input-group">
-                        <label for="book-barcode">Barcode:</label>
-                        <input type="text" id="book-barcode" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="book-name">Book Name:</label>
-                        <input type="text" id="book-name" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="book-price">Price:</label>
-                        <input type="number" id="book-price" step="0.01" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="book-details">Additional Details:</label>
-                        <textarea id="book-details" rows="3"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit">Add Book</button>
-                        <button type="button" id="clear-form">Clear Form</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Billing Section -->
-            <div id="billing-section" class="section">
-                <h2>Billing System</h2>
-                <div class="scan-container">
-                    <div class="camera-info">
-                        <p><strong>📱 Mobile Users:</strong> Make sure to allow camera access when prompted!</p>
-                        <button id="test-camera-bill" class="test-camera-btn">Test Camera Access</button>
-                    </div>
-                    <button id="start-scan-bill" class="scan-btn">📷 Scan Item to Add to Bill</button>
-                    <div id="scanner-bill" class="scanner-container"></div>
-                    <button id="stop-scan-bill" class="scan-btn hidden"> Stop Scanning</button>
-                    <div class="scan-help">
-                        <p><strong>Scanning Tips:</strong></p>
-                        <ul>
-                            <li>Hold device steady and keep QR/barcode centered</li>
-                            <li>Ensure good lighting</li>
-                            <li>Try moving closer or farther from the code</li>
-                            <li>Make sure the code is clear and not damaged</li>
-                        </ul>
-                        <div class="manual-input">
-                            <p>Or enter barcode manually:</p>
-                            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                                <input type="text" id="manual-barcode-bill" placeholder="Enter barcode manually" style="flex: 1;">
-                                <button id="use-manual-bill" class="scan-btn" style="padding: 8px 16px;">Add to Bill</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="billing-container">
-                    <div class="bill-items">
-                        <h3>Current Bill</h3>
-                        <div class="bill-list">
-                            <div class="bill-header">
-                                <span>Item</span>
-                                <span>Price</span>
-                                <span>Qty</span>
-                                <span>Total</span>
-                                <span>Action</span>
-                            </div>
-                            <div id="bill-items-list"></div>
-                        </div>
-                        <div class="bill-total">
-                            <strong>Total: $<span id="bill-total">0.00</span></strong>
-                        </div>
-                        <div class="bill-actions">
-                            <button id="clear-bill">Clear Bill</button>
-                            <button id="process-bill" class="primary-btn">Process Payment</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-
-        <!-- Messages -->
-        <div id="message-container"></div>
     </div>
 
     <script src="app.js"></script>
 </body>
+
 </html>

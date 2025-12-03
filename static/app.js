@@ -1,72 +1,168 @@
-// Library Inventory Management System - Flask API Integration
+// Library Inventory Management System
 class LibraryInventorySystem {
     constructor() {
+        this.books = [];
         this.currentBill = [];
-        this.isMobileDevice = this.checkMobile();
-        this.scanningActive = false;
-        this.scanCheckInterval = null;
+        this.isLoggedIn = false;
+        this.scannerAdd = null;
+        this.scannerBill = null;
+        this.currentUser = null;
         this.currentStream = null;
+        this.scanningActive = false;
+        this.flashlightOn = false;
+        this.isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         this.allBooks = []; // Cache for autocomplete
-        
+        this.currentExistingBook = null; // For update quantity mode
+
         this.init();
     }
-    
+
     init() {
         this.bindEvents();
-        this.loadInventory();
-        this.updateStats();
+        this.checkLoginStatus();
+
+        // Show server error if exists
+        if (window.serverError) {
+            this.showToast(window.serverError, 'error');
+        }
     }
-    
-    checkMobile() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    checkLoginStatus() {
+        // Use server-provided state
+        this.isLoggedIn = window.isAuthenticated;
+        this.currentUser = window.currentUser;
+
+        if (this.isLoggedIn) {
+            this.showDashboard();
+            this.fetchBooks(); // Fetch books from server
+        } else {
+            this.showLoginScreen();
+        }
     }
-    
+
     bindEvents() {
-        // Navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.switchSection(e.target.dataset.section);
-            });
+        document.getElementById('logout-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/logout';
         });
-        
-        // Add Book Form
+
+        // Navigation (Sidebar & Mobile)
+        const navHandler = (e) => {
+            const btn = e.currentTarget;
+            const screen = btn.dataset.screen;
+            if (screen) {
+                this.switchSection(screen);
+            }
+        };
+
+        document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(btn => {
+            btn.addEventListener('click', navHandler);
+        });
+
+        // Add Book
+        document.getElementById('start-scan-add').addEventListener('click', () => {
+            this.startScanner('add');
+        });
+
+        document.getElementById('stop-scan-add').addEventListener('click', () => {
+            this.stopScanner('add');
+        });
+
         document.getElementById('add-book-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.addBook();
         });
-        
+
         document.getElementById('clear-form').addEventListener('click', () => {
             this.clearBookForm();
         });
         
-        // Check for existing book when barcode is entered
-        document.getElementById('book-barcode').addEventListener('blur', async (e) => {
-            const barcode = e.target.value.trim();
-            if (barcode) {
-                await this.checkExistingBook(barcode);
-            }
+        // Update quantity mode buttons
+        document.getElementById('update-quantity-btn').addEventListener('click', () => {
+            this.confirmUpdateQuantity();
         });
         
-        // Add Book Scanner
-        document.getElementById('start-camera').addEventListener('click', () => {
-            this.startScanner('add');
+        document.getElementById('cancel-update-btn').addEventListener('click', () => {
+            this.hideUpdateQuantityMode();
         });
         
-        document.getElementById('stop-camera').addEventListener('click', () => {
-            this.stopScanner('add');
+        // Auto-calculate new total when quantity changes
+        document.getElementById('quantity-to-add').addEventListener('input', (e) => {
+            this.updateNewTotal();
         });
-        
-        // Billing Scanner
-        document.getElementById('start-camera-bill').addEventListener('click', () => {
+
+        // Billing
+        document.getElementById('start-scan-bill').addEventListener('click', () => {
             this.startScanner('bill');
         });
-        
-        document.getElementById('stop-camera-bill').addEventListener('click', () => {
+
+        document.getElementById('stop-scan-bill').addEventListener('click', () => {
             this.stopScanner('bill');
         });
+
+        document.getElementById('clear-bill').addEventListener('click', () => {
+            this.clearBill();
+        });
+
+        document.getElementById('process-bill').addEventListener('click', () => {
+            this.processBill();
+        });
+
+        // Search
+        const searchInput = document.getElementById('search-books');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.searchBooks(e.target.value);
+            });
+        }
+
+        // Manual barcode input
+        document.getElementById('use-manual-add').addEventListener('click', () => {
+            this.useManualBarcode('add');
+        });
+
+        document.getElementById('use-manual-bill').addEventListener('click', () => {
+            this.useManualBarcode('bill');
+        });
+
+        // Allow Enter key for manual barcode input
+        document.getElementById('manual-barcode-add').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.useManualBarcode('add');
+            }
+        });
+
+        // Manual Barcode Input for Billing with Autocomplete
+        const manualBarcodeInput = document.getElementById('manual-barcode-bill');
+        const suggestionsList = document.getElementById('barcode-suggestions');
+        
+        if (manualBarcodeInput && suggestionsList) {
+            manualBarcodeInput.addEventListener('input', (e) => {
+                this.showBarcodeSuggestions(e.target.value);
+            });
+            
+            manualBarcodeInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const barcode = e.target.value.trim();
+                    if (barcode) {
+                        this.addToBill(barcode);
+                        e.target.value = '';
+                        suggestionsList.innerHTML = '';
+                    }
+                }
+            });
+            
+            // Close suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!manualBarcodeInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                    suggestionsList.innerHTML = '';
+                }
+            });
+        }
         
         // Flashlight buttons
-        const flashBtnAdd = document.getElementById('flash-btn');
+        const flashBtnAdd = document.getElementById('flash-btn-add');
         const flashBtnBill = document.getElementById('flash-btn-bill');
         
         if (flashBtnAdd) {
@@ -80,112 +176,88 @@ class LibraryInventorySystem {
                 this.toggleFlashlight('bill');
             });
         }
-        
-        // Manual Barcode Input for Billing
-        const manualBarcodeInput = document.getElementById('manual-barcode-bill');
-        const suggestionsList = document.getElementById('barcode-suggestions');
-        
-        manualBarcodeInput.addEventListener('input', (e) => {
-            this.showBarcodeSuggestions(e.target.value);
-        });
-        
-        manualBarcodeInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const barcode = e.target.value.trim();
-                if (barcode) {
-                    this.addToBill(barcode);
-                    e.target.value = '';
-                    suggestionsList.innerHTML = '';
-                }
-            }
-        });
-        
-        // Close suggestions when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!manualBarcodeInput.contains(e.target) && !suggestionsList.contains(e.target)) {
-                suggestionsList.innerHTML = '';
-            }
-        });
-        
-        // Search
-        document.getElementById('search-books').addEventListener('input', (e) => {
-            this.searchBooks(e.target.value);
-        });
-        
-        document.getElementById('clear-search').addEventListener('click', () => {
-            document.getElementById('search-books').value = '';
-            this.loadInventory();
-        });
-        
-        // Billing
-        document.getElementById('clear-bill').addEventListener('click', () => {
-            this.clearBill();
-        });
-        
-        document.getElementById('process-bill').addEventListener('click', () => {
-            this.processBill();
-        });
-        
-        // Download Buttons
-        document.getElementById('download-inventory-btn').addEventListener('click', () => {
-            this.downloadInventory();
-        });
-        
-        document.getElementById('download-transactions-btn').addEventListener('click', () => {
-            this.downloadTransactions();
-        });
     }
-    
-    switchSection(sectionName) {
-        // Update navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
-        
-        // Update sections
-        document.querySelectorAll('.section').forEach(section => {
-            section.classList.remove('active');
-        });
-        document.getElementById(`${sectionName}-section`).classList.add('active');
-        
-        // Stop any active scanning
-        this.stopScanner('add');
-        this.stopScanner('bill');
-        
-        // Clear suggestions
-        document.getElementById('barcode-suggestions').innerHTML = '';
-        
-        // Update content
-        if (sectionName === 'inventory') {
-            this.loadInventory();
-            this.updateStats();
-        } else if (sectionName === 'billing') {
-            this.displayBill();
-            this.loadBooksForAutocomplete();
+
+    showLoginScreen() {
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('dashboard-screen').classList.add('hidden');
+    }
+
+    showDashboard() {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+
+        const userDisplay = document.getElementById('user-name-display');
+        if (userDisplay) {
+            userDisplay.textContent = this.currentUser || 'Admin';
         }
     }
-    
-    async loadBooksForAutocomplete() {
+
+    handleLogout() {
+        this.isLoggedIn = false;
+        this.currentUser = null;
+        this.stopAllScanners();
+        this.showLoginScreen();
+    }
+
+    switchSection(sectionName) {
+        // Update navigation (both sidebar and mobile)
+        document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(btn => {
+            if (btn.dataset.screen === sectionName) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // Update sections
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        const targetSection = document.getElementById(`${sectionName}-section`);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+
+        // Stop scanners when switching sections
+        this.stopAllScanners();
+
+        // Update content based on section
+        if (sectionName === 'inventory') {
+            this.fetchBooks(); // Refresh inventory
+        } else if (sectionName === 'billing') {
+            this.displayBill();
+        }
+    }
+
+    // API Interactions
+    async fetchBooks() {
         try {
             const response = await fetch('/api/books');
             const data = await response.json();
-            this.allBooks = data.books || [];
+
+            if (data.books) {
+                this.books = data.books;
+                this.allBooks = data.books; // Cache for autocomplete
+                this.updateStats();
+                this.displayBooks();
+            }
         } catch (error) {
-            console.error('Error loading books for autocomplete:', error);
+            console.error('Error fetching books:', error);
+            this.showToast('Failed to load inventory', 'error');
         }
     }
-    
+
     showBarcodeSuggestions(query) {
         const suggestionsList = document.getElementById('barcode-suggestions');
+        if (!suggestionsList) return;
         
         if (!query || query.length < 1) {
             suggestionsList.innerHTML = '';
             return;
         }
         
-        // Filter books by barcode or name
         const matches = this.allBooks.filter(book => 
             book.barcode.toLowerCase().includes(query.toLowerCase()) ||
             book.name.toLowerCase().includes(query.toLowerCase())
@@ -216,15 +288,162 @@ class LibraryInventorySystem {
             });
         });
     }
-    
+
+    async addBook() {
+        const barcode = document.getElementById('book-barcode').value.trim();
+        const name = document.getElementById('book-name').value.trim();
+        const price = document.getElementById('book-price').value;
+        const quantity = document.getElementById('book-quantity').value;
+        const details = document.getElementById('book-details').value.trim();
+
+        if (!barcode || !name || !price) {
+            this.showToast('Please fill in all required fields.', 'error');
+            return;
+        }
+
+        // Note: Duplicate check is now handled in handleScanResult for scanned barcodes
+        // This path is only for manually typed barcodes in the form
+
+        try {
+            const response = await fetch('/api/books', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    barcode,
+                    name,
+                    price,
+                    details,
+                    quantity: parseInt(quantity)
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showToast('Book added successfully!', 'success');
+                this.clearBookForm();
+                this.fetchBooks(); // Refresh list
+                this.switchSection('inventory');
+            } else {
+                this.showToast(data.error || 'Failed to add book', 'error');
+            }
+        } catch (error) {
+            console.error('Error adding book:', error);
+            this.showToast('Server error while adding book', 'error');
+        }
+    }
+
+    async deleteBook(barcode) {
+        if (!confirm('Are you sure you want to delete this book?')) return;
+
+        try {
+            const response = await fetch('/api/delete_book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ barcode })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showToast('Book deleted successfully!', 'success');
+                this.fetchBooks(); // Refresh list
+            } else {
+                this.showToast(data.error || 'Failed to delete book', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting book:', error);
+            this.showToast('Server error while deleting book', 'error');
+        }
+    }
+
+    async addToBill(barcode) {
+        // Check local inventory first for immediate feedback
+        const book = this.books.find(book => book.barcode === barcode);
+
+        if (!book) {
+            // Try fetching from server just in case
+            try {
+                const response = await fetch(`/api/book/${barcode}`);
+                const data = await response.json();
+
+                if (data.book) {
+                    this.processAddToBill(data.book);
+                } else {
+                    this.showToast('Book not found in inventory!', 'error');
+                }
+            } catch (error) {
+                this.showToast('Error checking book details', 'error');
+            }
+        } else {
+            this.processAddToBill(book);
+        }
+    }
+
+    processAddToBill(book) {
+        const existingItem = this.currentBill.find(item => item.barcode === book.barcode);
+
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            this.currentBill.push({
+                barcode: book.barcode,
+                name: book.name,
+                price: book.price,
+                quantity: 1
+            });
+        }
+
+        this.displayBill();
+        this.showToast(`Added ${book.name} to bill`, 'success');
+    }
+
+    async processBill() {
+        if (this.currentBill.length === 0) {
+            this.showToast('No items in bill to process.', 'warning');
+            return;
+        }
+
+        const total = this.currentBill.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        if (!confirm(`Process payment of ₹${total.toFixed(2)}?`)) return;
+
+        try {
+            const response = await fetch('/api/process_bill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: this.currentBill,
+                    total: total,
+                    customer_name: 'Walk-in Customer' // You might want to add a field for this
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showToast(`Payment processed! ID: ${data.transaction_id}`, 'success');
+                this.currentBill = [];
+                this.displayBill();
+                this.fetchBooks(); // Update inventory quantities
+            } else {
+                this.showToast(data.error || 'Transaction failed', 'error');
+            }
+        } catch (error) {
+            console.error('Error processing bill:', error);
+            this.showToast('Server error processing bill', 'error');
+        }
+    }
+
+    // ... (Scanner logic remains mostly the same, just calling addToBill/handleScanResult) ...
+
     async startScanner(type) {
-        const scanType = type === 'add' ? '' : '-bill';
-        const video = document.getElementById(`video${scanType}`);
-        const canvas = document.getElementById(`canvas${scanType}`);
-        const startBtn = document.getElementById(`start-camera${scanType}`);
-        const stopBtn = document.getElementById(`stop-camera${scanType}`);
-        const resultDiv = document.getElementById(`scan-result${scanType}`);
-        const flashBtn = document.getElementById(`flash-btn${scanType}`);
+        const video = document.getElementById(`video-${type}`);
+        const canvas = document.getElementById(`canvas-${type}`);
+        const startBtn = document.getElementById(`start-scan-${type}`);
+        const stopBtn = document.getElementById(`stop-scan-${type}`);
+        const scannerWrapper = document.getElementById(`scanner-${type}`);
+        const flashBtn = document.getElementById(`flash-btn-${type}`);
         
         try {
             // Request camera access with advanced settings
@@ -241,18 +460,17 @@ class LibraryInventorySystem {
             
             video.srcObject = stream;
             video.style.display = 'block';
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            scannerWrapper.classList.remove('hidden');
             
             // Enable flashlight button if available
             const track = stream.getVideoTracks()[0];
             const capabilities = track.getCapabilities ? track.getCapabilities() : {};
             
-            if (capabilities.torch) {
-                if (flashBtn) {
-                    flashBtn.style.display = 'inline-block';
-                    flashBtn.disabled = false;
-                }
+            if (capabilities.torch && flashBtn) {
+                flashBtn.style.display = 'inline-block';
+                flashBtn.disabled = false;
             }
             
             // Start continuous scanning
@@ -280,38 +498,33 @@ class LibraryInventorySystem {
                         });
                         
                         console.log(`✅ Zoom applied: ${targetZoom}x (Range: ${minZoom}-${maxZoom})`);
-                        resultDiv.textContent = `📹 Camera active with ${targetZoom}x zoom! Point at barcode...`;
+                        this.showToast(`Camera active with ${targetZoom}x zoom!`, 'success');
                     } else {
                         console.log('⚠️ Zoom not supported on this device');
+                        this.showToast('Camera active!', 'success');
                     }
                 } catch (zoomError) {
                     console.warn('⚠️ Could not apply zoom:', zoomError);
                 }
                 
-                this.continuousScan(type, video, canvas, resultDiv);
+                this.continuousScan(type, video, canvas);
             }, { once: true });
             
         } catch (error) {
             console.error('Scanner error:', error);
-            resultDiv.style.display = 'block';
-            resultDiv.className = 'scan-result error';
             
             if (error.name === 'NotAllowedError') {
-                resultDiv.textContent = '❌ Camera permission denied. Please allow camera access and try again.';
+                this.showToast('Camera permission denied. Please allow camera access.', 'error');
             } else if (error.name === 'NotFoundError') {
-                resultDiv.textContent = '❌ No camera found on this device.';
+                this.showToast('No camera found on this device.', 'error');
             } else {
-                resultDiv.textContent = `❌ Error: ${error.message}`;
+                this.showToast(`Error: ${error.message}`, 'error');
             }
             
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            if (flashBtn) {
-                flashBtn.style.display = 'none';
-            }
+            this.resetScannerUI(type);
         }
     }
-    
+
     async toggleFlashlight(type) {
         if (!this.currentStream) return;
         
@@ -329,8 +542,7 @@ class LibraryInventorySystem {
                 advanced: [{ torch: this.flashlightOn }]
             });
             
-            const scanType = type === 'add' ? '' : '-bill';
-            const flashBtn = document.getElementById(`flash-btn${scanType}`);
+            const flashBtn = document.getElementById(`flash-btn-${type}`);
             if (flashBtn) {
                 flashBtn.textContent = this.flashlightOn ? '🔦 Flash: ON' : '💡 Flash: OFF';
                 flashBtn.classList.toggle('flash-active', this.flashlightOn);
@@ -341,11 +553,11 @@ class LibraryInventorySystem {
             console.error('❌ Flashlight toggle error:', error);
         }
     }
-    
-    async continuousScan(type, video, canvas, resultDiv) {
+
+    async continuousScan(type, video, canvas) {
         const ctx = canvas.getContext('2d');
         let scanCount = 0;
-        const maxScans = 200; // Auto-stop after ~1 minute (200 * 300ms)
+        const maxScans = 200; // Auto-stop after ~1 minute
         
         const scanFrame = async () => {
             if (!this.scanningActive) {
@@ -358,15 +570,13 @@ class LibraryInventorySystem {
             // Auto-stop after max scans
             if (scanCount >= maxScans) {
                 console.log('⏰ Auto-stopping scanner after timeout');
-                resultDiv.className = 'scan-result error';
-                resultDiv.textContent = '⏰ Scanner timed out. Please try again.';
+                this.showToast('Scanner timed out. Please try again.', 'warning');
                 this.stopScanner(type);
                 return;
             }
             
             try {
                 // Capture frame exactly as displayed (with zoom applied)
-                // This ensures the zoomed-in view is what gets sent for decoding
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -392,11 +602,6 @@ class LibraryInventorySystem {
                     console.warn('⚠️ Scan error:', data.error);
                 }
                 
-                // Update status every 10 scans
-                if (scanCount % 10 === 0) {
-                    resultDiv.textContent = `📹 Scanning... (${scanCount} attempts) - Hold barcode steady`;
-                }
-                
                 // Continue scanning
                 if (this.scanningActive) {
                     setTimeout(scanFrame, 300); // Scan every 300ms
@@ -414,288 +619,171 @@ class LibraryInventorySystem {
         console.log('🎬 Starting continuous scan with zoom applied');
         scanFrame();
     }
-    
-    async stopScanner(type) {
-        const scanType = type === 'add' ? '' : '-bill';
-        const video = document.getElementById(`video${scanType}`);
-        const startBtn = document.getElementById(`start-camera${scanType}`);
-        const stopBtn = document.getElementById(`stop-camera${scanType}`);
-        const flashBtn = document.getElementById(`flash-btn${scanType}`);
-        
-        console.log('🛑 Stopping scanner');
+
+    stopScanner(type) {
         this.scanningActive = false;
-        this.flashlightOn = false;
         
-        if (this.scanCheckInterval) {
-            clearInterval(this.scanCheckInterval);
-            this.scanCheckInterval = null;
-        }
-        
-        // Turn off flashlight before stopping
         if (this.currentStream) {
-            const track = this.currentStream.getVideoTracks()[0];
-            try {
-                await track.applyConstraints({
-                    advanced: [{ torch: false }]
-                });
-            } catch (e) {
-                // Ignore errors when turning off torch
-            }
-        }
-        
-        // Stop video stream
-        if (this.currentStream) {
-            this.currentStream.getTracks().forEach(track => {
-                track.stop();
-                console.log('🎥 Stopped track:', track.kind);
-            });
+            this.currentStream.getTracks().forEach(track => track.stop());
             this.currentStream = null;
         }
         
-        if (video.srcObject) {
-            video.srcObject.getTracks().forEach(track => track.stop());
+        const video = document.getElementById(`video-${type}`);
+        const scannerWrapper = document.getElementById(`scanner-${type}`);
+        const flashBtn = document.getElementById(`flash-btn-${type}`);
+        
+        if (video) {
             video.srcObject = null;
+            video.style.display = 'none';
         }
         
-        video.style.display = 'none';
-        
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        
-        // Hide and reset flashlight button
         if (flashBtn) {
             flashBtn.style.display = 'none';
             flashBtn.disabled = true;
-            flashBtn.textContent = '💡 Flash: OFF';
             flashBtn.classList.remove('flash-active');
+            flashBtn.textContent = '💡 Flash: OFF';
+        }
+        
+        if (scannerWrapper) {
+            scannerWrapper.classList.add('hidden');
+        }
+        
+        this.flashlightOn = false;
+        this.resetScannerUI(type);
+        
+        console.log('📹 Scanner stopped');
+    }
+
+    resetScannerUI(type) {
+        const startBtn = document.getElementById(`start-scan-${type}`);
+        const stopBtn = document.getElementById(`stop-scan-${type}`);
+
+        if (startBtn) startBtn.classList.remove('hidden');
+        if (stopBtn) stopBtn.classList.add('hidden');
+    }
+
+    stopAllScanners() {
+        if (this.scanningActive) {
+            this.stopScanner('add');
+            this.stopScanner('bill');
         }
     }
-    
+
+    async useManualBarcode(type) {
+        const inputId = type === 'add' ? 'manual-barcode-add' : 'manual-barcode-bill';
+        const input = document.getElementById(inputId);
+        const barcode = input.value.trim();
+
+        if (!barcode) {
+            this.showToast('Please enter a barcode first.', 'warning');
+            return;
+        }
+
+        await this.handleScanResult(barcode, type);
+        input.value = '';
+    }
+
     async handleScanResult(barcode, type) {
-        const scanType = type === 'add' ? '' : '-bill';
-        const resultDiv = document.getElementById(`scan-result${scanType}`);
-        
-        resultDiv.style.display = 'block';
-        resultDiv.className = 'scan-result success';
-        resultDiv.textContent = `✅ Barcode detected: ${barcode}`;
-        
         if (type === 'add') {
-            document.getElementById('book-barcode').value = barcode;
-            // Check if book exists immediately after scan
-            await this.checkExistingBook(barcode);
+            // Check if book already exists
+            const existingBook = this.books.find(b => b.barcode === barcode);
+            
+            if (existingBook) {
+                // Book exists - show update quantity mode
+                this.showUpdateQuantityMode(existingBook);
+            } else {
+                // New book - show form
+                document.getElementById('book-barcode').value = barcode;
+                document.getElementById('book-name').focus();
+                this.showToast('Barcode set! Enter book details.', 'success');
+            }
         } else if (type === 'bill') {
             this.addToBill(barcode);
         }
     }
-    
-    async checkExistingBook(barcode) {
-        if (!barcode) return;
+
+    showUpdateQuantityMode(book) {
+        this.currentExistingBook = book;
         
-        try {
-            const checkResponse = await fetch(`/api/book/${barcode}`);
-            
-            if (checkResponse.ok) {
-                const checkData = await checkResponse.json();
-                if (checkData.book) {
-                    // Book exists, show options dialog immediately
-                    this.showExistingBookDialog(checkData.book);
-                    return true;
-                }
-            }
-            return false;
-        } catch (error) {
-            console.error('Check existing book error:', error);
-            return false;
-        }
+        // Hide the normal form
+        document.getElementById('add-book-form').style.display = 'none';
+        
+        // Show the update quantity mode
+        document.getElementById('update-quantity-mode').style.display = 'block';
+        
+        // Populate existing book details
+        document.getElementById('existing-barcode').textContent = book.barcode;
+        document.getElementById('existing-name').textContent = book.name;
+        document.getElementById('existing-quantity').textContent = book.quantity || 1;
+        
+        // Reset quantity to add
+        document.getElementById('quantity-to-add').value = '1';
+        
+        // Update new total
+        this.updateNewTotal();
+        
+        this.showToast('Book exists! Update quantity below.', 'info');
     }
-    
-    async addBook() {
-        const barcode = document.getElementById('book-barcode').value.trim();
-        const name = document.getElementById('book-name').value.trim();
-        const price = document.getElementById('book-price').value.trim();
-        const quantity = document.getElementById('book-quantity').value.trim();
-        const details = document.getElementById('book-details').value.trim();
+
+    hideUpdateQuantityMode() {
+        // Show the normal form
+        document.getElementById('add-book-form').style.display = 'block';
         
-        if (!barcode) {
-            this.showMessage('Please enter a barcode', 'error');
-            return;
-        }
+        // Hide the update quantity mode
+        document.getElementById('update-quantity-mode').style.display = 'none';
         
-        try {
-            // Check if book already exists
-            const exists = await this.checkExistingBook(barcode);
-            if (exists) {
-                return; // Dialog already shown
-            }
-            
-            // New book - validate all fields
-            if (!name || !price) {
-                this.showMessage('Please fill all required fields (Name and Price)', 'error');
-                return;
-            }
-            
-            // Proceed with adding new book
-            const response = await fetch('/api/books', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ barcode, name, price, quantity: quantity || 1, details })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.success) {
-                this.showMessage(data.message || 'Book added successfully!', 'success');
-                this.clearBookForm();
-                this.switchSection('inventory');
-            } else {
-                this.showMessage(data.error || 'Failed to add book', 'error');
-            }
-            
-        } catch (error) {
-            console.error('Add book error:', error);
-            this.showMessage('Error adding book', 'error');
-        }
-    }
-    
-    showExistingBookDialog(book) {
-        // Replace the form content with existing book options
-        const formContainer = document.getElementById('add-book-form');
-        
-        // Store original form HTML to restore later
-        if (!this.originalFormHTML) {
-            this.originalFormHTML = formContainer.innerHTML;
-        }
-        
-        formContainer.innerHTML = `
-            <div class="existing-book-container">
-                <div class="alert alert-warning">
-                    <strong>⚠️ Book Already Exists in Inventory</strong>
-                </div>
-                
-                <div class="existing-book-details">
-                    <h3>Current Book Information</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Barcode:</label>
-                            <span>${book.barcode}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Book Name:</label>
-                            <span>${book.name}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Price:</label>
-                            <span>₹${parseFloat(book.price).toFixed(2)}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Current Quantity:</label>
-                            <span class="quantity-badge">${book.quantity}</span>
-                        </div>
-                        <div class="info-item full-width">
-                            <label>Details:</label>
-                            <span>${book.details || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="update-section">
-                    <h3>Update Quantity</h3>
-                    <div class="input-group">
-                        <label for="new-quantity">Set New Quantity:</label>
-                        <input type="number" id="new-quantity" min="0" value="${book.quantity}" class="quantity-input">
-                        <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
-                            Enter 0 to mark as out of stock, or any positive number
-                        </small>
-                    </div>
-                </div>
-                
-                <div class="form-actions" style="margin-top: 2rem;">
-                    <button type="button" class="btn btn-danger" onclick="library.deleteBook('${book.barcode}')">
-                        Delete Book
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="library.restoreAddBookForm()">
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="library.updateBookQuantity('${book.barcode}')">
-                        qUpdate Quantity
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    
-    restoreAddBookForm() {
-        const formContainer = document.getElementById('add-book-form');
-        if (this.originalFormHTML) {
-            formContainer.innerHTML = this.originalFormHTML;
-        }
+        this.currentExistingBook = null;
         this.clearBookForm();
     }
-    
-    async updateBookQuantity(barcode) {
-        const newQuantity = document.getElementById('new-quantity').value;
+
+    updateNewTotal() {
+        if (!this.currentExistingBook) return;
         
-        if (newQuantity === '' || newQuantity < 0) {
-            this.showMessage('Please enter a valid quantity (0 or greater)', 'error');
+        const currentQty = this.currentExistingBook.quantity || 1;
+        const toAdd = parseInt(document.getElementById('quantity-to-add').value) || 0;
+        const newTotal = currentQty + toAdd;
+        
+        document.getElementById('new-total-quantity').textContent = newTotal;
+    }
+
+    async confirmUpdateQuantity() {
+        if (!this.currentExistingBook) return;
+        
+        const quantityToAdd = parseInt(document.getElementById('quantity-to-add').value);
+        
+        if (isNaN(quantityToAdd) || quantityToAdd <= 0) {
+            this.showToast('Please enter a valid quantity', 'error');
             return;
         }
+        
+        const newQuantity = (this.currentExistingBook.quantity || 1) + quantityToAdd;
         
         try {
             const response = await fetch('/api/update_book_quantity', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    barcode: barcode, 
-                    quantity: parseInt(newQuantity) 
+                    barcode: this.currentExistingBook.barcode, 
+                    quantity: newQuantity 
                 })
             });
-            
+
             const data = await response.json();
-            
-            if (response.ok && data.success) {
-                this.showMessage(data.message || 'Quantity updated successfully!', 'success');
-                this.restoreAddBookForm();
-                this.loadInventory();
-                this.updateStats();
+
+            if (data.success) {
+                this.showToast(`Quantity updated! New total: ${newQuantity}`, 'success');
+                this.hideUpdateQuantityMode();
+                this.fetchBooks();
+                this.switchSection('inventory');
             } else {
-                this.showMessage(data.error || 'Failed to update quantity', 'error');
+                this.showToast(data.error || 'Failed to update quantity', 'error');
             }
-            
         } catch (error) {
-            console.error('Update quantity error:', error);
-            this.showMessage('Error updating quantity', 'error');
+            console.error('Error updating quantity:', error);
+            this.showToast('Server error while updating quantity', 'error');
         }
     }
-    
-    async deleteBook(barcode) {
-        if (!confirm('Are you sure you want to delete this book from inventory? This action cannot be undone.')) {
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/delete_book', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ barcode: barcode })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.success) {
-                this.showMessage('Book deleted successfully!', 'success');
-                this.restoreAddBookForm();
-                this.loadInventory();
-                this.updateStats();
-            } else {
-                this.showMessage(data.error || 'Failed to delete book', 'error');
-            }
-            
-        } catch (error) {
-            console.error('Delete book error:', error);
-            this.showMessage('Error deleting book', 'error');
-        }
-    }
-    
+
     clearBookForm() {
         document.getElementById('book-barcode').value = '';
         document.getElementById('book-name').value = '';
@@ -703,258 +791,202 @@ class LibraryInventorySystem {
         document.getElementById('book-quantity').value = '1';
         document.getElementById('book-details').value = '';
     }
-    
-    async loadInventory() {
-        try {
-            const response = await fetch('/api/books');
-            const data = await response.json();
-            
-            this.allBooks = data.books || [];
-            this.displayBooks(this.allBooks);
-            
-        } catch (error) {
-            console.error('Load inventory error:', error);
-            this.showMessage('Error loading inventory', 'error');
-        }
-    }
-    
-    displayBooks(books) {
-        const container = document.getElementById('books-container');
-        
-        if (books.length === 0) {
-            container.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #7f8c8d;">No books found</td></tr>';
-            return;
-        }
-        
-        container.innerHTML = books.map(book => `
-            <tr>
-                <td>${book.barcode}</td>
-                <td>${book.name}</td>
-                <td>₹${parseFloat(book.price).toFixed(2)}</td>
-                <td>${book.quantity || 0}</td>
-                <td>${book.details || 'N/A'}</td>
-                <td>${new Date(book.date_added).toLocaleDateString()}</td>
-            </tr>
-        `).join('');
-    }
-    
-    async searchBooks(query) {
-        const filtered = this.allBooks.filter(book =>
+
+    searchBooks(query) {
+        const filteredBooks = this.books.filter(book =>
             book.name.toLowerCase().includes(query.toLowerCase()) ||
             book.barcode.includes(query) ||
             (book.details && book.details.toLowerCase().includes(query.toLowerCase()))
         );
+        this.displayBooks(filteredBooks);
+    }
+
+    downloadCSV(type) {
+        const endpoint = type === 'inventory' ? '/api/download_inventory' : '/api/download_transactions';
         
-        this.displayBooks(filtered);
+        this.showToast(`Downloading ${type}...`, 'info');
+        
+        window.location.href = endpoint;
     }
-    
-    async updateStats() {
-        try {
-            const response = await fetch('/api/stats');
-            const data = await response.json();
-            
-            document.getElementById('total-books').textContent = data.total_books || 0;
-            document.getElementById('total-quantity').textContent = data.total_quantity || 0;
-            document.getElementById('total-value').textContent = `₹${(data.total_value || 0).toFixed(2)}`;
-            
-        } catch (error) {
-            console.error('Update stats error:', error);
+
+    displayBooks(booksToShow = this.books) {
+        const booksContainer = document.getElementById('books-container');
+        if (!booksContainer) return;
+
+        if (booksToShow.length === 0) {
+            booksContainer.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No books found.</td></tr>';
+            return;
         }
+
+        const booksHTML = booksToShow.map(book => `
+            <tr>
+                <td style="font-family: monospace; font-weight: 600;">${book.barcode}</td>
+                <td style="font-weight: 500;">${book.name}</td>
+                <td>₹${book.price.toFixed(2)}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <button class="btn btn-secondary" style="padding: 2px 6px; height: 24px; font-size: 0.75rem;" onclick="library.updateQuantity('${book.barcode}', -1)">-</button>
+                        <span style="font-weight: 600; min-width: 30px; text-align: center;">${book.quantity || 1}</span>
+                        <button class="btn btn-secondary" style="padding: 2px 6px; height: 24px; font-size: 0.75rem;" onclick="library.updateQuantity('${book.barcode}', 1)">+</button>
+                    </div>
+                </td>
+                <td style="color: var(--text-secondary); font-size: 0.9em;">${book.details || '-'}</td>
+                <td>
+                    <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="library.deleteBook('${book.barcode}')">
+                        <span class="material-icons-round" style="font-size: 16px;">delete</span>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        booksContainer.innerHTML = booksHTML;
     }
-    
-    async addToBill(barcode) {
+
+    async updateQuantity(barcode, change) {
+        const book = this.books.find(b => b.barcode === barcode);
+        if (!book) return;
+
+        const newQuantity = (book.quantity || 1) + change;
+        if (newQuantity < 0) {
+            this.showToast('Quantity cannot be negative', 'warning');
+            return;
+        }
+
         try {
-            const response = await fetch(`/api/book/${barcode}`);
+            const response = await fetch('/api/update_book_quantity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ barcode, quantity: newQuantity })
+            });
+
             const data = await response.json();
-            
-            if (response.ok && data.book) {
-                const book = data.book;
-                
-                // Check if book has stock
-                if (book.quantity <= 0) {
-                    this.showMessage(`${book.name} is out of stock`, 'error');
-                    return;
-                }
-                
-                const existing = this.currentBill.find(item => item.barcode === barcode);
-                
-                if (existing) {
-                    // Check if adding more exceeds available stock
-                    if (existing.quantity >= book.quantity) {
-                        this.showMessage(`Cannot add more. Only ${book.quantity} available in stock`, 'error');
-                        return;
-                    }
-                    existing.quantity += 1;
-                } else {
-                    this.currentBill.push({
-                        barcode: book.barcode,
-                        name: book.name,
-                        price: parseFloat(book.price),
-                        quantity: 1,
-                        availableStock: book.quantity
-                    });
-                }
-                
-                this.displayBill();
-                this.showMessage(`Added ${book.name} to bill`, 'success');
+
+            if (data.success) {
+                this.showToast(`Quantity updated to ${newQuantity}`, 'success');
+                this.fetchBooks(); // Refresh list
             } else {
-                this.showMessage('Book not found in inventory', 'error');
+                this.showToast(data.error || 'Failed to update quantity', 'error');
             }
-            
         } catch (error) {
-            console.error('Add to bill error:', error);
-            this.showMessage('Error adding to bill', 'error');
+            console.error('Error updating quantity:', error);
+            this.showToast('Server error while updating quantity', 'error');
         }
     }
-    
+
+    removeFromBill(barcode) {
+        this.currentBill = this.currentBill.filter(item => item.barcode !== barcode);
+        this.displayBill();
+    }
+
     updateBillItemQuantity(barcode, change) {
         const item = this.currentBill.find(item => item.barcode === barcode);
         if (!item) return;
-        
+
         item.quantity += change;
-        
+
         if (item.quantity <= 0) {
             this.removeFromBill(barcode);
         } else {
             this.displayBill();
         }
     }
-    
-    removeFromBill(barcode) {
-        this.currentBill = this.currentBill.filter(item => item.barcode !== barcode);
-        this.displayBill();
-    }
-    
+
     displayBill() {
-        const container = document.getElementById('bill-items');
-        const totalElement = document.getElementById('bill-total');
-        
+        const billItemsList = document.getElementById('bill-items');
+        const billTotalElement = document.getElementById('bill-total');
+        const billSubtotalElement = document.getElementById('bill-subtotal');
+
+        if (!billItemsList) return;
+
         if (this.currentBill.length === 0) {
-            container.innerHTML = '<tr><td colspan="5" class="empty-bill">No items in bill</td></tr>';
-            totalElement.textContent = '0.00';
+            billItemsList.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No items in bill.</td></tr>';
+            if (billTotalElement) billTotalElement.textContent = '₹0.00';
+            if (billSubtotalElement) billSubtotalElement.textContent = '₹0.00';
             return;
         }
-        
-        container.innerHTML = this.currentBill.map(item => {
+
+        const billHTML = this.currentBill.map(item => {
             const total = item.price * item.quantity;
             return `
                 <tr>
-                    <td class="item-name">${item.name}</td>
-                    <td>₹${item.price.toFixed(2)}</td>
+                    <td style="font-weight: 500;">${item.name}</td>
                     <td>
-                        <div class="quantity-controls">
-                            <button class="qty-btn" onclick="library.updateBillItemQuantity('${item.barcode}', -1)">-</button>
-                            <span class="qty-display">${item.quantity}</span>
-                            <button class="qty-btn" onclick="library.updateBillItemQuantity('${item.barcode}', 1)">+</button>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <button class="btn btn-secondary" style="padding: 2px 6px; height: 24px;" onclick="library.updateBillItemQuantity('${item.barcode}', -1)">-</button>
+                            <span style="font-weight: 600; min-width: 20px; text-align: center;">${item.quantity}</span>
+                            <button class="btn btn-secondary" style="padding: 2px 6px; height: 24px;" onclick="library.updateBillItemQuantity('${item.barcode}', 1)">+</button>
                         </div>
                     </td>
-                    <td>₹${total.toFixed(2)}</td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td style="font-weight: 600;">₹${total.toFixed(2)}</td>
                     <td>
-                        <button class="delete-btn" onclick="library.removeFromBill('${item.barcode}')">Remove</button>
+                        <button class="btn btn-danger" style="padding: 2px 6px; height: 24px;" onclick="library.removeFromBill('${item.barcode}')">
+                            <span class="material-icons-round" style="font-size: 14px;">close</span>
+                        </button>
                     </td>
                 </tr>
             `;
         }).join('');
-        
+
+        billItemsList.innerHTML = billHTML;
+
         const total = this.currentBill.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        totalElement.textContent = total.toFixed(2);
+        if (billTotalElement) billTotalElement.textContent = `₹${total.toFixed(2)}`;
+        if (billSubtotalElement) billSubtotalElement.textContent = `₹${total.toFixed(2)}`;
     }
-    
+
     clearBill() {
-        if (this.currentBill.length === 0) {
-            this.showMessage('Bill is already empty', 'info');
-            return;
-        }
-        
-        if (confirm('Clear current bill?')) {
+        if (this.currentBill.length === 0) return;
+
+        if (confirm('Are you sure you want to clear the current bill?')) {
             this.currentBill = [];
             this.displayBill();
-            document.getElementById('customer-name').value = '';
-            this.showMessage('Bill cleared', 'success');
+            this.showToast('Bill cleared', 'info');
         }
     }
-    
-    async processBill() {
-        if (this.currentBill.length === 0) {
-            this.showMessage('No items in bill', 'error');
-            return;
+
+    updateStats() {
+        const totalBooksElement = document.getElementById('total-books');
+        const totalValueElement = document.getElementById('total-value');
+
+        if (totalBooksElement && totalValueElement) {
+            const totalBooks = this.books.length;
+            const totalValue = this.books.reduce((sum, book) => sum + (book.price * (book.quantity || 1)), 0);
+
+            totalBooksElement.textContent = totalBooks;
+            totalValueElement.textContent = `₹${totalValue.toFixed(2)}`;
         }
-        
-        const customerName = document.getElementById('customer-name').value.trim();
-        
-        if (!customerName) {
-            this.showMessage('Please enter customer name', 'error');
-            document.getElementById('customer-name').focus();
-            return;
-        }
-        
-        const total = this.currentBill.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        if (!confirm(`Process payment of ₹${total.toFixed(2)} for ${customerName}?`)) {
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/process_bill', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    items: this.currentBill,
-                    total: total,
-                    customer_name: customerName
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.success) {
-                this.showMessage(`Payment processed! Transaction ID: ${data.transaction_id}`, 'success');
-                this.currentBill = [];
-                this.displayBill();
-                document.getElementById('customer-name').value = '';
-                // Reload inventory to show updated quantities
-                this.loadInventory();
-                this.updateStats();
-            } else {
-                if (data.details) {
-                    this.showMessage(`${data.error}: ${data.details.join(', ')}`, 'error');
-                } else {
-                    this.showMessage(data.error || 'Failed to process payment', 'error');
+    }
+
+    showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        let icon = 'info';
+        if (type === 'success') icon = 'check_circle';
+        if (type === 'error') icon = 'error';
+        if (type === 'warning') icon = 'warning';
+
+        toast.innerHTML = `
+            <span class="material-icons-round" style="color: inherit;">${icon}</span>
+            <span>${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
                 }
-            }
-            
-        } catch (error) {
-            console.error('Process bill error:', error);
-            this.showMessage('Error processing payment', 'error');
-        }
-    }
-    
-    showMessage(message, type = 'info') {
-        const container = document.createElement('div');
-        container.className = `message ${type}`;
-        container.textContent = message;
-        container.style.cursor = 'pointer';
-        
-        document.body.appendChild(container);
-        
-        const remove = () => {
-            if (container.parentNode) {
-                container.parentNode.removeChild(container);
-            }
-        };
-        
-        container.addEventListener('click', remove);
-        setTimeout(remove, 5000);
-    }
-    
-    downloadInventory() {
-        window.location.href = '/api/download_inventory';
-        this.showMessage('Downloading inventory CSV...', 'success');
-    }
-    
-    downloadTransactions() {
-        window.location.href = '/api/download_transactions';
-        this.showMessage('Downloading transactions CSV...', 'success');
+            }, 300);
+        }, 3000);
     }
 }
 
